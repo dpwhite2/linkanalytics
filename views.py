@@ -3,26 +3,28 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 
-from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance, TrackedUrlTarget
+from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance, TrackedUrlTarget, TrackedUrlStats
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm, TrackedUrlTargetForm
 
 import datetime
 
+import linkanalytics.targetviews
 
-def accessTrackedUrl(request, uuid, file):
-    qs = TrackedUrlInstance.objects.filter(uuid=uuid).filter(trackedurl__targets__name=file)
+
+def accessTrackedUrl(request, uuid, targetname):
+    qs = TrackedUrlInstance.objects.filter(uuid=uuid) #.filter(trackedurl__targets__name=file)
     if not qs.exists():
-        # TODO: error, uuid/file combination not found
+        # TODO: error, uuid combination not found
         return HttpResponse('I\'m sorry: I was unable to find that link.')
-    if not qs.count()==1:
-        # TODO: error, more than one matching url_instance found
-        return HttpResponse('Internal error: The link is not unique.')
-    inst = qs[0]
-    if inst.first_access is None:
-        inst.first_access = datetime.date.today()
-    inst.recent_access = datetime.date.today()
+    target = qs[0].on_access(targetname)
+    view,arg = target.view_and_arg()
     
-    return HttpResponse('Under construction.')
+    targetviewfunc = getattr(linkanalytics.targetviews, view)
+    
+    return targetviewfunc(request, uuid, targetname, arg)
+    
+    #return HttpResponse('Under construction. {0}, {1}'.format(view,arg))
+    
     
 def createTrackedUrl(request):
     if request.method == 'POST': # If the form has been submitted...

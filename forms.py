@@ -1,5 +1,5 @@
 from django import forms
-from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance, TrackedUrlTarget
+from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance, TrackedUrlTarget, Email
 
 #==============================================================================#
 class TrackedUrlDefaultForm(forms.ModelForm):
@@ -32,6 +32,6 @@ class TrackedUrlTargetForm(forms.ModelForm):
 # - Provide ability for link customization
 # - allow trackees to be added
 # - allow ability to create quick trackees
-# class EmailForm():
-#    class Meta:
-#        model = email
+class EmailForm():
+    class Meta:
+        model = email
