@@ -21,7 +21,6 @@ _TARGETURLCONF = "linkanalytics.targeturls"
 
 
 def accessTrackedUrl(request, uuid, tailpath):
-    print 'accessTrackedUrl()'
     tailpath = '/%s'%tailpath
     qs = TrackedUrlInstance.objects.filter(uuid=uuid)
     if not qs.exists():
@@ -31,18 +30,14 @@ def accessTrackedUrl(request, uuid, tailpath):
     accessed = qs[0].on_access()
     
     try:
-        print 'accessTrackedUrl(): trying targetview...'
         #viewfunc,args,kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
         viewfunc,args,kwargs = resolve(tailpath, urlconf=targeturls)
-        print 'accessTrackedUrl(): calling targetview...'
         response = viewfunc(request, uuid, *args, **kwargs)
     #except Resolver404:
     #    # custom 404 message?
     #    accessed.undo()
     #    raise
     except Exception as e:
-        print 'accessTrackedUrl(): catching exception: {0}...'.format(type(e))
-        traceback.print_tb(sys.exc_info()[2])
         # cancel access if an error occurs
         accessed.undo()
         raise

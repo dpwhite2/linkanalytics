@@ -10,7 +10,6 @@ from django.template import RequestContext
 #    return HttpResponse('Target view: TXT.  Under Construction')
 
 def targetview_html(request, uuid, filepath=None):
-    print 'in targetview_html()'
     if not filepath:
         filepath = 'default.html'
     return render_to_response('linkanalytics/targetviews/%s'%filepath,
