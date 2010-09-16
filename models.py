@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core import mail
 #from django.db.models import F
 
 import uuid
@@ -75,7 +76,8 @@ class Trackee(models.Model):
         return u'%s'%self.username
     
     def url_instances(self):
-        return TrackedUrlInstance.objects.filter(trackee=self.pk)
+        ##return TrackedUrlInstance.objects.filter(trackee=self.pk)
+        return self.trackedurlinstance_set.all()
     def urls(self):
         return self.trackedurl_set.all()
     
@@ -91,58 +93,31 @@ class Trackee(models.Model):
                         is_django_user= True )
                         
 
-class TrackedUrlTarget(models.Model):
-    name =          models.CharField(max_length=64, unique=True)  # the url part that appears after the uuid
-    view =          models.CharField(max_length=TRACKED_URL_VIEWS_KEY_LENGTH, choices=TRACKED_URL_VIEWS_GUILIST)
-    arg =           models.CharField(max_length=256, blank=True)
-    # Possible built-in Targets: 
-    #   1x1 px image, 
-    #   generic HTML "Your usage has been counted. Thank you.", 
-    #   generic HTML for email links
-    
-    def __unicode__(self):
-        return u'%s'%self.name
-        
-    def trackedurls(self):
-        return TrackedUrl.objects.filter(targets=self.pk)
-        
-    @staticmethod
-    def get_unknown_target():
-        qs = TrackedUrlTarget.objects.filter(name='<UNKNOWN>',view='?')
-        if not qs.exists():
-            t = TrackedUrlTarget(name='<UNKNOWN>',view='?',arg='')
-            t.save()
-        else:
-            t = qs[0]
-        return t
-        
-    def view_and_arg(self):
-        k,ty,view = _tracked_url_views[self.view]
-        return view,self.arg
-
-
 class TrackedUrl(models.Model):
     name =      models.CharField(max_length=256)
     comments =  models.TextField(blank=True)
-    # Every target,trackee pair must be unique
-    targets =   models.ManyToManyField(TrackedUrlTarget, through='UrlTargetPair')
+    #targets =   models.ManyToManyField(TrackedUrlTarget, through='UrlTargetPair')
     trackees =  models.ManyToManyField(Trackee, through='TrackedUrlInstance')
     
     def __unicode__(self):
         return u'%s'%self.name
     
     def url_instances(self):
-        return TrackedUrlInstance.objects.filter(trackedurl=self.pk)
+        ##return TrackedUrlInstance.objects.filter(trackedurl=self.pk)
+        return self.trackedurlinstance_set.all()
     def url_instances_read(self):
-        # find all instances that have at least one linked TrackedUrlStats with a non-None first_access
-        return self.trackedurlinstance_set.annotate(
-                    num_accesses=models.Sum('trackedurlstats__access_count')
-                ).filter(num_accesses__gt=0)
+        return self.trackedurlinstance_set.filter(access_count__gt=0)
         
-    def add_target(self, target):
-        p = UrlTargetPair(trackedurl=self, target=target)
-        p.save()
-        return p
+        # find all instances that have at least one linked TrackedUrlStats with a non-None first_access
+        #return self.trackedurlinstance_set.annotate(
+        #            num_accesses=models.Sum('trackedurlstats__access_count')
+        #        ).filter(num_accesses__gt=0)
+                
+        
+    #def add_target(self, target):
+    #    p = UrlTargetPair(trackedurl=self, target=target)
+    #    p.save()
+    #    return p
     def add_trackee(self, trackee):
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
         i.save()
@@ -151,17 +126,45 @@ class TrackedUrl(models.Model):
 
 def _create_uuid():
     return uuid.uuid4().hex
+    
+
+class Accessed(object):
+    """Class that simplifies cancelling TrackedUrlInstance accesses."""
+    # TODO: consider concurrency issues... 
+    #   What if another access happens between __init__() and undo()?
+    def __init__(self, instance):
+        self.instance = instance
+        # Save the current 'last_access' in case the new access must be undone
+        self.last_access = self.instance.recent_access
+        
+        self.instance.access_count += 1
+        
+        today = datetime.date.today()
+        if not self.instance.first_access:
+            self.instance.first_access = today
+        self.instance.recent_access = today
+        self.instance.save()
+        
+    def undo(self):
+        # Roll back changes
+        self.instance.access_count -= 1
+        
+        # Only write first_access if this was the "first_access"
+        if self.instance.access_count==0:
+            self.instance.first_access = None
+        self.instance.recent_access = self.last_access
+        self.instance.save()
         
 
 class TrackedUrlInstance(models.Model):
     trackedurl =    models.ForeignKey(TrackedUrl)
     trackee =       models.ForeignKey(Trackee)
-    #target =        models.ForeignKey(TrackedUrlTarget)
     uuid =          models.CharField(max_length=32, editable=False, default=_create_uuid, unique=True)
     
     notified =      models.DateField(null=True, blank=True)
-    #first_access =  models.DateField(null=True, blank=True)
-    #recent_access = models.DateField(null=True, blank=True)
+    first_access =  models.DateField(null=True, blank=True)
+    recent_access = models.DateField(null=True, blank=True)
+    access_count =  models.IntegerField(default=0)
     
     class Meta:
         unique_together = (("trackedurl", "trackee", ),)
@@ -169,100 +172,74 @@ class TrackedUrlInstance(models.Model):
     def __unicode__(self):
         return u'%s, %s'%(self.trackedurl, self.trackee)
         
-    def targets(self):
-        return self.trackedurl.targets.all()
-        
     def was_accessed(self):
-        return self.access_count() > 0
+        return self.access_count > 0
         
-    def recent_access(self):
-        d = self.trackedurlstats_set.aggregate(models.Max('recent_access'))
-        return d['recent_access__max']
-    def first_access(self):
-        d = self.trackedurlstats_set.aggregate(models.Min('first_access'))
-        return d['first_access__min']
-    def access_count(self):
-        d = self.trackedurlstats_set.aggregate(models.Sum('access_count'))
-        s = d['access_count__sum']
-        return s  if s is not None else  0
+    def on_access(self):
+        accessed = Accessed(self)
+        return accessed        
         
-    def on_access(self, targetname):
-        tqs = self.trackedurl.targets.filter(name=targetname)
-        c = tqs.count()
-        if c==1:
-            target = tqs[0]
-        elif c==0:
-            # if the target was not found, use the 'unknown' target
-            target = TrackedUrlTarget.get_unknown_target()
-        else:
-            # this is an error, should only find zero or one matching object
-            raise RuntimeError()
-        
-        qs = TrackedUrlStats.objects.filter(instance=self, target=target)
-        c = qs.count()
-        if c==1:
-            stats = qs[0]
-        elif c==0:
-            stats = TrackedUrlStats(instance=self, target=target)
-            stats.save()
-        else:
-            # this is an error, should only find zero or one matching object
-            raise RuntimeError()
-        
-        today = datetime.date.today()
-        
-        stats.access_count = models.F('access_count') + 1
-        if not stats.first_access:
-            stats.first_access = today
-        stats.recent_access = today
-        stats.save()
-        
-        return target
-        
-        
-# This is kept separate from the TrackedUrlInstance class so that instances may be deleted without losing the tracking information.
-class TrackedUrlStats(models.Model):
-    instance =      models.ForeignKey(TrackedUrlInstance)
-    target =        models.ForeignKey(TrackedUrlTarget)
-    
-    first_access =  models.DateField(null=True, blank=True)
-    recent_access = models.DateField(null=True, blank=True)
-    access_count =  models.IntegerField(default=0)
-    
-    class Meta:
-        # The combined values of the fields "trackedurl", "trackee" must be unique for each UrlInstance.
-        unique_together = (("instance", "target"),)
-    
-    def __unicode__(self):
-        return u'%s (via %s) accessed: %s (first: %s), total: %d' % (
-                    self.instance, self.target, 
-                    self.first_access.isoformat(), self.recent_access.isoformat(), self.access_count)
-
-        
-
-# The main purpose of this class is to enforce the uniqueness of every ("trackedurl", "target") pair.
-class UrlTargetPair(models.Model):
-    trackedurl =    models.ForeignKey(TrackedUrl)
-    target =       models.ForeignKey(TrackedUrlTarget)
-    
-    class Meta:
-        unique_together = (("trackedurl", "target"),)
-    
-    def __unicode__(self):
-        return u'%s, %s'%(self.trackedurl, self.target)
-    
-
 #==============================================================================#
 # Extras:
 
+class EmailAlreadySentError(Exception):
+    """An attempt was made to send a DraftEmail object that was already sent."""
+    
 class Email(models.Model):
-    recipients =    models.ManyToManyField(Trackee)
     fromemail =     models.EmailField()
-    sent =          models.BooleanField(default=False)
-    trackedurls =   models.ManyToManyField(TrackedUrl)
+    #sent =         models.BooleanField(default=False)
+    trackedurl =    models.ForeignKey(TrackedUrl)
+    subject =       models.CharField(max_length=256)
     message =       models.TextField()
     
+def sendemail(email, recipients):
+    trackedurls,htmltemplate,txttemplate = parse_email_message(email.message)
+    subjtemplate = parse_subject(email.subject)
+    msgs = []
+    for recipient in recipients:
+        subj = subjtemplate.process(recipient)
+        html = htmltemplate.process(recipient)
+        txt = txttemplate.process(recipient)
+        msg = django.core.mail.EmailMultiAlternatives(subj, txt, email.fromemail, [recipient])
+        msg.attach_alternative(html, "text/html")
+        msgs.append(msg)
+    
+    cx = django.core.mail.get_connection()
+    cx.send_messages(msgs)
+    
+    #e = Email(fromemail=self.fromemail, subject=self.subject, message=self.message)
+    email.trackedurls.add(*trackedurls)
+    email.save()
+    
+    r = EmailRecipients(email=email, datesent=datetime.date.today())
+    r.recipients.add(self.pending_recipients)
+    r.save()
+    
 
+class DraftEmail(models.Model):
+    # An Email object is created when the EmailDraft is sent.  At that point, the EmailDraft may not be modified.
+    # Also when sent, pending_recipients is flushed to SentEmail.recipients
+    pending_recipients = models.ManyToManyField(Trackee)
+    fromemail =     models.EmailField()
+    subject =       models.CharField(max_length=256)
+    message =       models.TextField()
+    sent =          models.BooleanField(default=False)
+    
+    def send(self):
+        # This method is under construction.
+        if self.sent:
+            raise EmailAlreadySentError()
+        recipients = parse_recipients(self.pending_recipients)
+        e = Email(fromemail=self.fromemail, subject=self.subject, message=self.message)
+        sendemail(e, recipients)
+        
+        self.pending_recipients.clear()
+        self.sent = True
+    
+class EmailRecipients(models.Model):
+    email =         models.ForeignKey(Email)
+    recipients =    models.ManyToManyField(Trackee)
+    datesent =      models.DateField()
 
 
 
