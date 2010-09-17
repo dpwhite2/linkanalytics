@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse as urlreverse
 from django.db import IntegrityError
 
-from models import TrackedUrl,TrackedUrlInstance,Trackee,Email # TrackedUrlTarget
+from models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail # TrackedUrlTarget
 #from models import TRACKED_URL_TYPEABBREVS
 
 import datetime
@@ -28,6 +28,11 @@ class UserLogin_Context(object):
 
 #==============================================================================#
 class LinkAnalytics_TestCaseBase(TestCase):
+    urls = 'linkanalytics.tests_urls'
+    
+    # sets site.domain to 'testserver' which is what Django calls the testserver within URLs
+    fixtures = ['sites.json']
+    
     def scoped_login(self, username, password):
         return UserLogin_Context(self.client, username, password)
     def setUp(self):
@@ -46,31 +51,28 @@ class LinkAnalytics_TestCaseBase(TestCase):
         #TrackedUrlTarget.objects.all().delete()
         Trackee.objects.all().delete()
         Email.objects.all().delete()
+        DraftEmail.objects.all().delete()
         
         for user in self.users:
             user.delete()
+            
+    def new_trackedurl(self, name):
+        """Creates and saves a TrackedUrl"""
+        u = TrackedUrl(name=name)
+        u.save()
+        return u
+    def new_trackee(self, username):
+        """Creates and saves a Trackee"""
+        t = Trackee(username=username)
+        t.save()
+        return t
     
 #==============================================================================#
 # Model tests:
-
-#class TrackedUrlStats_TestCase(LinkAnalytics_TestCaseBase):
-#    def test_unique_together(self):
-#        pass
-        
-        
-#class UrlTargetPair_TestCase(LinkAnalytics_TestCaseBase):
-#    def test_unique_together(self):
-#        u1 = TrackedUrl(name='Name1')
-#        u1.save()
-#        g = TrackedUrlTarget(name='target', view='H')
-#        g.save()
-#        
-#        p = u1.add_target(g)
-#        self.assertRaises(IntegrityError, u1.add_target, g)
-        
         
 class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
     def test_unique_together(self):
+        # Check that the same Trackee can not be added to a TrackedUrl more than once.
         u1 = TrackedUrl(name='Name1')
         u1.save()
         t1 = Trackee(username='trackee1')
@@ -81,6 +83,7 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
         self.assertRaises(IntegrityError, u1.add_trackee, t1)  # t1 is passed to add_trackee
         
     def test_basic(self):
+        # Check the attributes on a TrackedUrlInstance that has not been accessed.
         u = TrackedUrl(name='Name')
         u.save()
         t = Trackee(username='trackee0')
@@ -88,29 +91,79 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
         
         i = u.add_trackee(t) # create a TrackedUrlInstance
         
-        self.assertEquals(u.url_instances().count(), 1)
-        self.assertEquals(u.url_instances()[0], i)
-        self.assertEquals(t.url_instances().count(), 1)
-        self.assertEquals(t.url_instances()[0], i)
+        self.assertEquals(i.first_access, None)
+        self.assertEquals(i.recent_access, None)
+        self.assertEquals(i.access_count, 0)
+        self.assertEquals(i.was_accessed(), False)
         
-    #def test_targets(self):
-    #    #g = TrackedUrlTarget(name='target', view='H')
-    #    #g.save()
-    #    
-    #    u = TrackedUrl(name='Name')
-    #    u.save()
-    #    u.add_target(g)
-    #    t = Trackee(username='trackee0')
-    #    t.save()        
-    #    i = u.add_trackee(t)
-    #    
-    #    self.assertEquals(i.targets().count(), 1)
-    #    self.assertEquals(i.targets()[0], g)
+    def test_cancelled_access(self):
+        # Cancel an access using the Accessed object returned by on_access()
+        u1 = TrackedUrl(name='Name1')
+        u1.save()
+        t1 = Trackee(username='trackee1')
+        t1.save()
+        
+        i1 = u1.add_trackee(t1)
+        
+        accessed = i1.on_access()
+        accessed.undo()
+        
+        self.assertEquals(i1.first_access, None)
+        self.assertEquals(i1.recent_access, None)
+        self.assertEquals(i1.access_count, 0)
+        self.assertEquals(i1.was_accessed(), False)
+        
+        
+    def test_single_access(self):
+        # Check the attributes on a TrackedUrlInstance that has been accessed once.
+        u1 = TrackedUrl(name='Name1')
+        u1.save()
+        t1 = Trackee(username='trackee1')
+        t1.save()
+        
+        i1 = u1.add_trackee(t1)
+        
+        i1.on_access()
+        
+        self.assertEquals(i1.recent_access, datetime.date.today())
+        self.assertEquals(i1.first_access, datetime.date.today())
+        self.assertEquals(i1.access_count, 1)
+        self.assertEquals(i1.was_accessed(), True)
+        
+    def test_second_access(self):
+        u1 = TrackedUrl(name='Name1')
+        u1.save()
+        t1 = Trackee(username='trackee1')
+        t1.save()
+        
+        i1 = u1.add_trackee(t1)
+        
+        # Simulate an access on a previous day.
+        otherday = datetime.date.today() - datetime.timedelta(days=7)
+        i1.first_access = otherday
+        i1.recent_access = otherday
+        i1.access_count = 1
+        
+        self.assertEquals(i1.recent_access, otherday)
+        self.assertEquals(i1.first_access, otherday)
+        self.assertEquals(i1.access_count, 1)
+        self.assertEquals(i1.was_accessed(), True)
+        
+        # A second access
+        i1.on_access()
+        
+        # .first_access should reflect previous access, but recent_access 
+        # should reflect the most recent access.
+        self.assertEquals(i1.recent_access, datetime.date.today())
+        self.assertEquals(i1.first_access, otherday)
+        self.assertEquals(i1.access_count, 2)
+        self.assertEquals(i1.was_accessed(), True)
         
         
         
 class Trackee_TestCase(LinkAnalytics_TestCaseBase):
     def test_unique_username(self):
+        # Check that Trackees cannot have duplicate names.
         t1 = Trackee(username='trackee1')
         t1.save()
         t2 = Trackee(username='trackee1')
@@ -118,6 +171,7 @@ class Trackee_TestCase(LinkAnalytics_TestCaseBase):
         self.assertRaises(IntegrityError, t2.save)
         
     def test_urls(self):
+        # Check the Trackee.urls() method
         u1 = TrackedUrl(name='Name1')
         u1.save()
         t1 = Trackee(username='trackee1')
@@ -133,41 +187,55 @@ class Trackee_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(t2.urls()[0], u1)
         
         
-#class TrackedUrlTarget_TestCase(LinkAnalytics_TestCaseBase):
-#    def test_unique_name(self):
-#        g1 = TrackedUrlTarget(name='target1', view='H')
-#        g1.save()
-#        g2 = TrackedUrlTarget(name='target1', view='H')
-#        # should not allow saving object with same name
-#        self.assertRaises(IntegrityError, g2.save)
-        
-        
 class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
     def test_trackees(self):
+        # Check the TrackedUrl.trackees attribute
         u1 = TrackedUrl(name='Name1')
         u1.save()
-        u2 = TrackedUrl(name='Name2')
-        u2.save()
+        
+        self.assertEquals(u1.trackees.exists(), False)
         
         t1 = Trackee(username='trackee1')
         t1.save()
-        t2 = Trackee(username='trackee2')
-        t2.save()
+        
+        # Merely create a Trackee should not associate it with a TrackedUrl
+        self.assertEquals(u1.trackees.exists(), False)
         
         i1 = u1.add_trackee(t1)
+        
+        # ...But once added, the Trackee should be found in the trackees attribute.
+        self.assertEquals(u1.trackees.exists(), True)
+        self.assertEquals(u1.trackees.count(), 1)
+        self.assertEquals(u1.trackees.all()[0], t1)
+        
+        u2 = TrackedUrl(name='Name2')
+        u2.save()
+        t2 = Trackee(username='trackee2')
+        t2.save()
         i2 = u2.add_trackee(t1)
         
+        # TrackeUrls and Trackees should not affect other TrackedUrls
         self.assertEquals(u1.trackees.count(), 1)
         self.assertEquals(u1.trackees.all()[0], t1)
         self.assertEquals(u2.trackees.count(), 1)
         self.assertEquals(u2.trackees.all()[0], t1)
         
+        i2b = u1.add_trackee(t2)
+        
+        # Check that a second Trackee was added (assumes Trackees in 
+        # trackees.all() appear in the same order in which they were added.)
+        self.assertEquals(u1.trackees.count(), 2)
+        self.assertEquals(u1.trackees.all()[0], t1)
+        self.assertEquals(u1.trackees.all()[1], t2)
+        
+        
+        
     def test_urlInstances(self):
-        # TrackedUrl.url_instances() and TrackedUrl.url_instances_read()
+        # Check the methods: TrackedUrl.url_instances() and TrackedUrl.url_instances_read()
         u1 = TrackedUrl(name='Name1')
         u1.save()
         
-        # empty url_instances
+        # Both methods should be empty at first.
         self.assertEquals(u1.url_instances().count(),0)
         self.assertEquals(u1.url_instances_read().count(),0)
         
@@ -175,7 +243,7 @@ class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
         t1.save()
         i1 = u1.add_trackee(t1)
         
-        # non-empty url_instances
+        # Adding a Trackee should be reflected in url_instances(), but not url_instances_read()
         self.assertEquals(u1.url_instances().count(),1)
         self.assertEquals(u1.url_instances_read().count(),0)
         
@@ -184,29 +252,27 @@ class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
         
         i2 = u2.add_trackee(t1)
         
-        # more than one TrackedUrl object
+        # A Trackee may be associated with more than one TrackedUrl, but any 
+        # such TrackedUrls should have separate url_instances.
         self.assertEquals(u1.url_instances().count(),1)
         self.assertEquals(u1.url_instances_read().count(),0)
-        
-        ##targetname1 = 'target1'
-        #g1 = TrackedUrlTarget(name=targetname1, view='H')
-        #g1.save()
-        #u1.add_target(g1)
+        self.assertEquals(u2.url_instances().count(),1)
+        self.assertEquals(u2.url_instances_read().count(),0)
+        self.assertNotEquals(u1.url_instances()[0], u2.url_instances()[0])
+        # The separate TrackedUrlInstances refer to the same Trackee.
+        self.assertEquals(u1.url_instances()[0].trackee, u2.url_instances()[0].trackee)
         
         i1.on_access()
         
-        # with single access
+        # Once accessed, url_instances() remains the same but 
+        # url_instances_read() should indicate that the instance has now been 
+        # read.
         self.assertEquals(u1.url_instances().count(),1)
         self.assertEquals(u1.url_instances_read().count(),1)
         
-        #targetname2 = 'target2'
-        #g2 = TrackedUrlTarget(name=targetname2, view='H')
-        #g2.save()
-        #u1.add_target(g2)
-        
         i1.on_access()
         
-        # with a second access
+        # A second access should not affect the object counts.
         self.assertEquals(u1.url_instances().count(),1)
         self.assertEquals(u1.url_instances_read().count(),1)
         
@@ -233,8 +299,51 @@ class CreateTrackee_TestCase(LinkAnalytics_TestCaseBase):
 #==============================================================================#
 # Target View tests:
 
-class ViewUnknown_TestCase(LinkAnalytics_TestCaseBase):
-    pass
+class ViewRedirect_TestCase(LinkAnalytics_TestCaseBase):
+    def test_local_redirect(self):
+        u = self.new_trackedurl('url1')
+        t = self.new_trackee('trackee1')
+        i = u.add_trackee(t)
+        
+        uuid = i.uuid
+        url = '/linkanalytics/access/{uuid}/r/linkanalytics/testurl/'.format(uuid=uuid)
+        response = self.client.get(url, follow=True)
+        chain = response.redirect_chain
+        
+        self.assertEquals(len(chain),1)
+        self.assertEquals(chain[0],(u'http://testserver/linkanalytics/testurl/',302))
+        
+        # reload the instance so its fields represent its current state
+        i = TrackedUrlInstance.objects.filter(uuid=uuid)[0]
+        
+        self.assertEquals(i.first_access, datetime.date.today())
+        self.assertEquals(i.recent_access, datetime.date.today())
+        self.assertEquals(i.access_count, 1)
+        
+    def test_nonlocal_redirect(self):
+        u = self.new_trackedurl('url1')
+        t = self.new_trackee('trackee1')
+        i = u.add_trackee(t)
+        
+        uuid = i.uuid
+        url = '/linkanalytics/access/{uuid}/http/www.google.com/'.format(uuid=uuid)
+        
+        # This uses a custom view function to handle 404 errors.  So, there may 
+        # be differences from what Django would return by default.
+        response = self.client.get(url, follow=True)
+        chain = response.redirect_chain
+        
+        self.assertEquals(len(chain),1)
+        self.assertEquals(chain[0],(u'http://www.google.com/',302))
+        
+        # reload the instance so its fields represent its current state
+        i = TrackedUrlInstance.objects.filter(uuid=uuid)[0]
+        
+        self.assertEquals(i.first_access, datetime.date.today())
+        self.assertEquals(i.recent_access, datetime.date.today())
+        self.assertEquals(i.access_count, 1)
+
+
 
 class ViewHtml_TestCase(LinkAnalytics_TestCaseBase):
     pass
@@ -251,66 +360,7 @@ class ViewGif_TestCase(LinkAnalytics_TestCaseBase):
 # Misc. tests:
         
 class Access_TestCase(LinkAnalytics_TestCaseBase):
-    def test_initialAccessValues(self):
-        # instance that has not been accessed yet
-        u1 = TrackedUrl(name='Name1')
-        u1.save()        
-        t1 = Trackee(username='trackee1')
-        t1.save()        
-        i1 = u1.add_trackee(t1)
-        
-        self.assertEquals(i1.was_accessed(), False)
-        self.assertEquals(i1.access_count, 0)
-        self.assertEquals(i1.recent_access, None)
-        self.assertEquals(i1.first_access, None)
-        
-        #self.assertEquals(i1.trackedurlstats_set.all().count(), 0)
-        
-    def test_unknownTarget_basic(self):
-        # instance that was accessed via an unknown targetname
-        u1 = TrackedUrl(name='Name1')
-        u1.save()
-        
-        t1 = Trackee(username='trackee1')
-        t1.save()
-        
-        i1 = u1.add_trackee(t1)
-        
-        #targetname = "A target name that doesn't exist in the database"
-        i1.on_access()
-        
-        self.assertEquals(i1.was_accessed(), True)
-        self.assertEquals(i1.access_count, 1)
-        self.assertEquals(i1.recent_access, datetime.date.today())
-        self.assertEquals(i1.first_access, datetime.date.today())
-        
-        #self.assertEquals(i1.trackedurlstats_set.all().count(), 1)
-        #self.assertEquals(i1.trackedurlstats_set.all()[0].instance, i1)
-        
-    def test_knownTarget_basic(self):
-        # instance accessed via a known targetname
-        #targetname = 'target'
-        #g1 = TrackedUrlTarget(name=targetname, view='H')
-        #g1.save()
-        
-        u1 = TrackedUrl(name='Name1')
-        u1.save()
-        
-        t1 = Trackee(username='trackee1')
-        t1.save()
-        
-        i1 = u1.add_trackee(t1)
-        #u1.add_target(g1)
-        
-        i1.on_access()
-        
-        self.assertEquals(i1.was_accessed(), True)
-        self.assertEquals(i1.access_count, 1)
-        self.assertEquals(i1.recent_access, datetime.date.today())
-        self.assertEquals(i1.first_access, datetime.date.today())
-        
-        #self.assertEquals(i1.trackedurlstats_set.all().count(), 1)
-        #self.assertEquals(i1.trackedurlstats_set.all()[0].instance, i1)
+    pass
     
 
 def suite():

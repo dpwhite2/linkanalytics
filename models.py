@@ -6,41 +6,6 @@ from django.core import mail
 import uuid
 import datetime
 
-# TRACKED_URL_TYPES = (
-    # ('P', 'png', 'image/png'),
-    # ('G', 'gif', 'image/gif'),
-    # ('H', 'html', 'text/html'),
-    # ('T', 'txt', 'text/plain'),
-    # ('X', 'xml', 'text/xml'),
-    # ('V', 'view', ''),
-    # ('?', 'unknown', ''),
-    # )
-    
-# _tracked_url_types = dict((x[0],x) for x in TRACKED_URL_TYPES)
-
-# TRACKED_URL_TYPEABBREVS = tuple((a,t) for (a,t,m) in TRACKED_URL_TYPES)
-
-TRACKED_URL_VIEWS = (
-    ('P', 'png', 'view_png'),
-    ('G', 'gif', 'view_gif'),
-    ('H', 'html', 'view_html'),
-    ('T', 'txt', 'view_txt'),
-    ('X', 'xml', 'view_xml'),
-    ('R', 'redirect', 'view_redirect'),
-    ('?', 'unknown', 'view_unknown'),
-    )
-    
-_tracked_url_views = dict((x[0],x) for x in TRACKED_URL_VIEWS)
-
-TRACKED_URL_VIEWS_GUILIST = tuple((k,t) for (k,t,v) in TRACKED_URL_VIEWS)
-
-# Length of the first item in TRACKED_URL_TYPES tuples.
-TRACKED_URL_TYPEABBREVS_KEY_LENGTH = 1
-
-# Length of the longest item in TRACKED_URL_VIEWS tuples.
-TRACKED_URL_VIEWS_KEY_LENGTH = max(len(k) for k in _tracked_url_views)
-
-
 # Design:
 #
 # A *TrackedUrl* represents a url whose accesses are tracked.
@@ -49,18 +14,13 @@ TRACKED_URL_VIEWS_KEY_LENGTH = max(len(k) for k in _tracked_url_views)
 # those instances tracks when a single user accesses a single url.  A 
 # TrackedUrlInstance is associated with exactly one TrackedUrl and one user.
 
-# Each TrackedUrl is also associated with one or more *TrackedUrlTargets*.  A 
-# target represents what is returned when a tracked link is accessed.  There is a 
-# many-to-many relationship between the TrackedUrlTarget and TrackedUrl. 
-
 # A *Trackee* is the actor whose url accesses are tracked.  Trackees and 
 # TrackedUrls have a many-to-many relationship through the TrackedUrlInstance 
 # class.
 
 # Trackees and TrackedUrls are created by the administrator.  
-# TrackedUrlInstances are created by the application.  TrackedUrlTargets can be 
-# created by the administrator or by the application, and some are provided 
-# with the installation.
+# TrackedUrlInstances are created by the application when a Trackee is assigned 
+# to a TrackedUrl.
 
 
 class Trackee(models.Model):
@@ -103,21 +63,11 @@ class TrackedUrl(models.Model):
         return u'%s'%self.name
     
     def url_instances(self):
-        ##return TrackedUrlInstance.objects.filter(trackedurl=self.pk)
         return self.trackedurlinstance_set.all()
+        
     def url_instances_read(self):
         return self.trackedurlinstance_set.filter(access_count__gt=0)
-        
-        # find all instances that have at least one linked TrackedUrlStats with a non-None first_access
-        #return self.trackedurlinstance_set.annotate(
-        #            num_accesses=models.Sum('trackedurlstats__access_count')
-        #        ).filter(num_accesses__gt=0)
                 
-        
-    #def add_target(self, target):
-    #    p = UrlTargetPair(trackedurl=self, target=target)
-    #    p.save()
-    #    return p
     def add_trackee(self, trackee):
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
         i.save()
