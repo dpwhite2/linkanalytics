@@ -11,11 +11,12 @@ DOMAIN = r'(?P<domain>([-\w\d]+\.)+[-\w\d]+(:\d+)?)'
 
 urlpatterns = patterns('linkanalytics',
     # FILEPATH in http and https is optional.
-    (r'^http/'+DOMAIN+r'(?:/'+PATH+r')?/?$', 'targetviews.targetview_redirect', {'scheme':'http'}),
-    (r'^https/'+DOMAIN+r'(?:/'+PATH+r')?/?$', 'targetviews.targetview_redirect', {'scheme':'https'}),
-    (r'^r/'+PATH+r'/?$', 'targetviews.targetview_redirect'),
+    (r'^http/'+DOMAIN+r'(?:/'+PATH+r')?/?$', 'targetviews.targetview_redirect', {'scheme':'http'}, 'redirect-http'),
+    (r'^https/'+DOMAIN+r'(?:/'+PATH+r')?/?$', 'targetviews.targetview_redirect', {'scheme':'https'}, 'redirect-https'),
+    (r'^r/'+PATH+r'/?$', 'targetviews.targetview_redirect', {}, 'redirect-local'),
+    
     (r'^h/'+FILEPATH+r'/?$', 'targetviews.targetview_html'),
-    (r'^pxg/?$', 'targetviews.targetview_pixelgif'),
-    (r'^pxp/?$', 'targetviews.targetview_pixelpng'),
+    (r'^gpx/?$', 'targetviews.targetview_pixelgif'),
+    (r'^ppx/?$', 'targetviews.targetview_pixelpng'),
 )
 

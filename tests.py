@@ -3,12 +3,16 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse as urlreverse
 from django.db import IntegrityError
+from django.template import Template, Context
 
-from models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail # TrackedUrlTarget
+from models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail, TrackedUrlAccess
 #from models import TRACKED_URL_TYPEABBREVS
 
 import datetime
 import unittest
+import textwrap
+
+from linkanalytics.util.htmltotext import HTMLtoText
 
 
 #==============================================================================#
@@ -28,6 +32,9 @@ class UserLogin_Context(object):
 
 #==============================================================================#
 class LinkAnalytics_TestCaseBase(TestCase):
+    pass
+    
+class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
     urls = 'linkanalytics.tests_urls'
     
     # sets site.domain to 'testserver' which is what Django calls the testserver within URLs
@@ -70,7 +77,7 @@ class LinkAnalytics_TestCaseBase(TestCase):
 #==============================================================================#
 # Model tests:
         
-class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
+class TrackedUrlInstance_TestCase(LinkAnalytics_DBTestCaseBase):
     def test_unique_together(self):
         # Check that the same Trackee can not be added to a TrackedUrl more than once.
         u1 = TrackedUrl(name='Name1')
@@ -105,8 +112,7 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
         
         i1 = u1.add_trackee(t1)
         
-        accessed = i1.on_access()
-        accessed.undo()
+        i1.on_access(success=False, url='')
         
         self.assertEquals(i1.first_access, None)
         self.assertEquals(i1.recent_access, None)
@@ -123,10 +129,10 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
         
         i1 = u1.add_trackee(t1)
         
-        i1.on_access()
+        i1.on_access(success=True, url='')
         
-        self.assertEquals(i1.recent_access, datetime.date.today())
-        self.assertEquals(i1.first_access, datetime.date.today())
+        self.assertEquals(i1.recent_access.date(), datetime.date.today())
+        self.assertEquals(i1.first_access.date(), datetime.date.today())
         self.assertEquals(i1.access_count, 1)
         self.assertEquals(i1.was_accessed(), True)
         
@@ -139,10 +145,9 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
         i1 = u1.add_trackee(t1)
         
         # Simulate an access on a previous day.
-        otherday = datetime.date.today() - datetime.timedelta(days=7)
-        i1.first_access = otherday
-        i1.recent_access = otherday
-        i1.access_count = 1
+        otherday = datetime.datetime.today() - datetime.timedelta(days=7)
+        a1 = TrackedUrlAccess(instance=i1, time=otherday, count=1, url='')
+        a1.save()
         
         self.assertEquals(i1.recent_access, otherday)
         self.assertEquals(i1.first_access, otherday)
@@ -150,18 +155,18 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(i1.was_accessed(), True)
         
         # A second access
-        i1.on_access()
+        i1.on_access(success=True, url='')
         
         # .first_access should reflect previous access, but recent_access 
         # should reflect the most recent access.
-        self.assertEquals(i1.recent_access, datetime.date.today())
+        self.assertEquals(i1.recent_access.date(), datetime.date.today())
         self.assertEquals(i1.first_access, otherday)
         self.assertEquals(i1.access_count, 2)
         self.assertEquals(i1.was_accessed(), True)
         
         
         
-class Trackee_TestCase(LinkAnalytics_TestCaseBase):
+class Trackee_TestCase(LinkAnalytics_DBTestCaseBase):
     def test_unique_username(self):
         # Check that Trackees cannot have duplicate names.
         t1 = Trackee(username='trackee1')
@@ -187,7 +192,7 @@ class Trackee_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(t2.urls()[0], u1)
         
         
-class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
+class TrackedUrl_TestCase(LinkAnalytics_DBTestCaseBase):
     def test_trackees(self):
         # Check the TrackedUrl.trackees attribute
         u1 = TrackedUrl(name='Name1')
@@ -262,7 +267,7 @@ class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
         # The separate TrackedUrlInstances refer to the same Trackee.
         self.assertEquals(u1.url_instances()[0].trackee, u2.url_instances()[0].trackee)
         
-        i1.on_access()
+        i1.on_access(success=True, url='')
         
         # Once accessed, url_instances() remains the same but 
         # url_instances_read() should indicate that the instance has now been 
@@ -270,7 +275,7 @@ class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(u1.url_instances().count(),1)
         self.assertEquals(u1.url_instances_read().count(),1)
         
-        i1.on_access()
+        i1.on_access(success=True, url='')
         
         # A second access should not affect the object counts.
         self.assertEquals(u1.url_instances().count(),1)
@@ -278,35 +283,40 @@ class TrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
         
         
         
-class Email_TestCase(LinkAnalytics_TestCaseBase):
+class Email_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
         
 #==============================================================================#
 # View tests:
 
-class AccessTrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
+class AccessTrackedUrl_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
 
-class CreateTrackedUrl_TestCase(LinkAnalytics_TestCaseBase):
+class CreateTrackedUrl_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
 
-class CreateTrackee_TestCase(LinkAnalytics_TestCaseBase):
+class CreateTrackee_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
 
-#class CreateTrackedUrlTarget_TestCase(LinkAnalytics_TestCaseBase):
+#class CreateTrackedUrlTarget_TestCase(LinkAnalytics_DBTestCaseBase):
 #    pass
 
 #==============================================================================#
 # Target View tests:
 
-class ViewRedirect_TestCase(LinkAnalytics_TestCaseBase):
+class ViewRedirect_TestCase(LinkAnalytics_DBTestCaseBase):
     def test_local_redirect(self):
         u = self.new_trackedurl('url1')
         t = self.new_trackee('trackee1')
         i = u.add_trackee(t)
         
-        uuid = i.uuid
-        url = '/linkanalytics/access/{uuid}/r/linkanalytics/testurl/'.format(uuid=uuid)
+        # The url we are resolving, using the default urls.py and targeturls.py:
+        #   URLINSTANCE  TARGETVIEW
+        #   URLINSTANCE = /linkanalytics/access/{uuid}
+        #   TARGETVIEW =  /r/linkanalytics/testurl/
+        urltail = urlreverse('redirect-local', urlconf='linkanalytics.targeturls', kwargs={'filepath':'linkanalytics/testurl/'})
+        urltail = urltail[1:] # remove leading '/'
+        url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
         
@@ -314,10 +324,10 @@ class ViewRedirect_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(chain[0],(u'http://testserver/linkanalytics/testurl/',302))
         
         # reload the instance so its fields represent its current state
-        i = TrackedUrlInstance.objects.filter(uuid=uuid)[0]
+        i = TrackedUrlInstance.objects.filter(uuid=i.uuid)[0]
         
-        self.assertEquals(i.first_access, datetime.date.today())
-        self.assertEquals(i.recent_access, datetime.date.today())
+        self.assertEquals(i.first_access.date(), datetime.date.today())
+        self.assertEquals(i.recent_access.date(), datetime.date.today())
         self.assertEquals(i.access_count, 1)
         
     def test_nonlocal_redirect(self):
@@ -325,8 +335,18 @@ class ViewRedirect_TestCase(LinkAnalytics_TestCaseBase):
         t = self.new_trackee('trackee1')
         i = u.add_trackee(t)
         
-        uuid = i.uuid
-        url = '/linkanalytics/access/{uuid}/http/www.google.com/'.format(uuid=uuid)
+        # The url we are resolving, using the default urls.py and targeturls.py:
+        #   URLINSTANCE  TARGETVIEW
+        #   URLINSTANCE = /linkanalytics/access/{uuid}
+        #   TARGETVIEW =  /http/www.google.com/       
+        urltail = urlreverse('redirect-http', urlconf='linkanalytics.targeturls', kwargs={'domain':'www.google.com','filepath':''})
+        urltail = urltail[1:] # remove leading '/'
+        url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
+        
+        # Limitation of Django testing framework: non-local urls will not be 
+        # accessed.  So, in this case, www.google.com is NOT actually accessed.  
+        # Instead, a 404 error is produced.  This code tests that the url was 
+        # correct, not that it was accessed.
         
         # This uses a custom view function to handle 404 errors.  So, there may 
         # be differences from what Django would return by default.
@@ -337,21 +357,20 @@ class ViewRedirect_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(chain[0],(u'http://www.google.com/',302))
         
         # reload the instance so its fields represent its current state
-        i = TrackedUrlInstance.objects.filter(uuid=uuid)[0]
+        i = TrackedUrlInstance.objects.filter(uuid=i.uuid)[0]
         
-        self.assertEquals(i.first_access, datetime.date.today())
-        self.assertEquals(i.recent_access, datetime.date.today())
+        self.assertEquals(i.first_access.date(), datetime.date.today())
+        self.assertEquals(i.recent_access.date(), datetime.date.today())
         self.assertEquals(i.access_count, 1)
 
 
-
-class ViewHtml_TestCase(LinkAnalytics_TestCaseBase):
+class ViewHtml_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
 
-class ViewTxt_TestCase(LinkAnalytics_TestCaseBase):
+class ViewPixelGif_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
 
-class ViewGif_TestCase(LinkAnalytics_TestCaseBase):
+class ViewPixelPng_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
 
 
@@ -359,15 +378,81 @@ class ViewGif_TestCase(LinkAnalytics_TestCaseBase):
 #==============================================================================#
 # Misc. tests:
         
-class Access_TestCase(LinkAnalytics_TestCaseBase):
+class Access_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
+    
+class Track_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
+    def test_trail(self):
+        templtxt = """\
+            {% load tracked_links %}
+            {% track 'trail' 'path/to/file.ext' %}
+            """
+        templtxt = textwrap.dedent(templtxt)
+        t = Template(templtxt)
+        c = Context({})
+        s = t.render(c)
+        self.assertEquals(s, '\n{% trackedurl linkid "path/to/file.ext" %}\n')
+        
+    def test_url(self):
+        templtxt = """\
+            {% load tracked_links %}
+            {% track 'url' 'http://www.domain.org/path/to/file.html' %}
+            """
+        templtxt = textwrap.dedent(templtxt)
+        t = Template(templtxt)
+        c = Context({})
+        s = t.render(c)
+        self.assertEquals(s, '\n{% trackedurl linkid "http/www.domain.org/path/to/file.html" %}\n')
+        
+    def test_pixel(self):
+        templtxt = """\
+            {% load tracked_links %}
+            {% track 'pixel' 'gif' %}
+            {% track 'pixel' 'png' %}
+            """
+        templtxt = textwrap.dedent(templtxt)
+        t = Template(templtxt)
+        c = Context({})
+        s = t.render(c)
+        self.assertEquals(s, '\n{% trackedurl linkid "gpx" %}\n{% trackedurl linkid "ppx" %}\n')
+        
+        
+    
+class HTMLtoText_TestCase(LinkAnalytics_TestCaseBase):
+    htmloutline = "<html><head></head><body>{0}</body></html>"
+    
+    def test_basic(self):
+        html = self.htmloutline.format("This is some text.")
+        htt = HTMLtoText()
+        htt.feed(html)
+        text = str(htt)
+        self.assertEquals(text, "This is some text.")
+        
+    def test_simple_paragraph(self):
+        html = self.htmloutline.format("<p>A paragraph.</p>")
+        htt = HTMLtoText()
+        htt.feed(html)
+        text = str(htt)
+        self.assertEquals(text, "\nA paragraph.\n")
+        
+    def test_two_paragraphs(self):
+        html = self.htmloutline.format("<p>A paragraph.</p><p>Another paragraph.</p>")
+        htt = HTMLtoText()
+        htt.feed(html)
+        text = str(htt)
+        self.assertEquals(text, "\nA paragraph.\n\nAnother paragraph.\n")
+        
+    def test_linebreak(self):
+        html = self.htmloutline.format("One line.<br/>Two lines.")
+        htt = HTMLtoText()
+        htt.feed(html)
+        text = str(htt)
+        self.assertEquals(text, "One line.\nTwo lines.")
     
 
 def suite():
     test_suite = unittest.TestSuite()
     loader = unittest.TestLoader()
-    #test_suite.addTest(loader.loadTestsFromTestCase(Model_TestCase))
-    #test_suite.addTest(loader.loadTestsFromTestCase(Access_TestCase))
     for name,val in globals().iteritems():
         if name.endswith('_TestCase') and issubclass(val, LinkAnalytics_TestCaseBase):
             test_suite.addTest(loader.loadTestsFromTestCase(val))

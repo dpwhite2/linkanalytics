@@ -47,4 +47,8 @@ def targetview_redirect(request, uuid, scheme=None, domain=None, filepath=None):
     response = redirect(url)
     return response
 
-
+def targetview_pixelgif(request, uuid):
+    return HttpResponse('Target view: targetview_pixelgif().  Under Construction')
+    
+def targetview_pixelpng(request, uuid):
+    return HttpResponse('Target view: targetview_pixelpng().  Under Construction')

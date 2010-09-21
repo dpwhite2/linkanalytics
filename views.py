@@ -26,19 +26,15 @@ def accessTrackedUrl(request, uuid, tailpath):
     if not qs.exists():
         raise Http404
     
-    accessed = qs[0].on_access()
+    # TODO: determine url 
     
     try:
         viewfunc,args,kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
         response = viewfunc(request, uuid, *args, **kwargs)
-    #except Resolver404:
-    #    # custom 404 message?
-    #    accessed.undo()
-    #    raise
+        # record access only *after* viewfunc() returned
+        qs[0].on_access(success=True, url='')
     except Exception as e:
-        # cancel access if an error occurs
-        accessed.undo()
-        raise
+        qs[0].on_access(success=False, url='')
     
     return response
     
