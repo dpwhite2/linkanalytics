@@ -94,7 +94,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'djcelery',
-    'django_nose',
     'linkanalytics',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
@@ -111,6 +110,4 @@ BROKER_VHOST =    'dpwhite2_vhost'
 # domain name. CAUTION: It must not end in a slash and it must be 
 # *fully-qualified* (i.e. it must include the http://).
 WORKLOG_REMINDER_EMAIL_LINK_URLBASE = 'http://opus-dev.cnl.ncsu.edu:9797'
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
