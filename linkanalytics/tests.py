@@ -14,12 +14,6 @@ import textwrap
 
 from linkanalytics.util.htmltotext import HTMLtoText
 
-import django
-
-import sys
-sys.stderr.write('----------\n{0}\n----------'.format(str(django)))
-##print '----------\n{0}\n----------'.format(str(django))
-
 
 #==============================================================================#
 # Test cases are automatically added to the test suite if they derive from 
