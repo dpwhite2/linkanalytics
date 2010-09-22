@@ -3,8 +3,10 @@ Duplicate of the default urlconf in urls.py.  This allows urls to be customized
 without breaking tests.  It also allows some extra views to be used for testing 
 only.
 """
+# NOTE: Make sure this module stays synchronized with urls.py.
 
-# NOTE: Make sure this stays synchronized with urls.py.
+# Disable Nose test autodiscovery for this module.
+__test__ = False
 
 from django.conf.urls.defaults import *
 

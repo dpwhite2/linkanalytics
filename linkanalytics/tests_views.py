@@ -2,6 +2,9 @@
 Some views used only during testing.
 """
 
+# Disable Nose test autodiscovery for this module.
+__test__ = False
+
 from django.http import HttpResponse, HttpResponseNotFound
 
 def testview(request):
