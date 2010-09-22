@@ -15,7 +15,10 @@ import textwrap
 from linkanalytics.util.htmltotext import HTMLtoText
 
 import django
-print '----------\n{0}\n----------'.format(str(django))
+
+import sys
+sys.stderr.write('----------\n{0}\n----------'.format(str(django)))
+##print '----------\n{0}\n----------'.format(str(django))
 
 
 #==============================================================================#
