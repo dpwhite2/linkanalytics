@@ -14,6 +14,11 @@ import textwrap
 
 from linkanalytics.util.htmltotext import HTMLtoText
 
+import sys
+import os
+sys.stderr.write('sys.path = {0}\n'.format(sys.path))
+sys.stderr.write('PYTHONPATH = {0}\n'.format(os.environ.get('PYTHONPATH','')))
+
 
 #==============================================================================#
 # Test cases are automatically added to the test suite if they derive from 
