@@ -16,7 +16,7 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     
     # The following static file views must only be enabled for the development server.
-    (r'^media/linkanalytics/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/home/dpwhite2/linkanalyticsapp/linkanalytics/media'}),
+    (r'^media/linkanalytics/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/home/dpwhite2/linkanalytics/linkanalytics/media'}),
 
     (r'^linkanalytics/', include('linkanalytics.urls')),
 
