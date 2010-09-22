@@ -1,4 +1,8 @@
 
+import datetime
+import unittest
+import textwrap
+
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse as urlreverse
@@ -8,17 +12,8 @@ from django.template import Template, Context
 from models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail, TrackedUrlAccess
 #from models import TRACKED_URL_TYPEABBREVS
 
-import datetime
-import unittest
-import textwrap
 
 from linkanalytics.util.htmltotext import HTMLtoText
-
-import sys
-import os
-sys.stderr.write('sys.path = {0}\n'.format(sys.path))
-sys.stderr.write('PYTHONPATH = {0}\n'.format(os.environ.get('PYTHONPATH','')))
-
 
 #==============================================================================#
 # Test cases are automatically added to the test suite if they derive from 
