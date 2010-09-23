@@ -105,9 +105,3 @@ BROKER_USER =     'dpwhite2_user'
 BROKER_PASSWORD = 'Fraz8pHAy6sep3Et'
 BROKER_VHOST =    'dpwhite2_vhost'
 
-# The beginning of the URL used in email reminders.  This is the portion of the 
-# URL that precedes "/worklog/add/...".  Normally this will be "http://" then a 
-# domain name. CAUTION: It must not end in a slash and it must be 
-# *fully-qualified* (i.e. it must include the http://).
-WORKLOG_REMINDER_EMAIL_LINK_URLBASE = 'http://opus-dev.cnl.ncsu.edu:9797'
-

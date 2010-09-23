@@ -9,11 +9,11 @@ from django.core.urlresolvers import reverse as urlreverse
 from django.db import IntegrityError
 from django.template import Template, Context
 
-from models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail, TrackedUrlAccess
-#from models import TRACKED_URL_TYPEABBREVS
+from linkanalytics.models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail,TrackedUrlAccess
 
 
 from linkanalytics.util.htmltotext import HTMLtoText
+from linkanalytics import email as LAemail
 
 #==============================================================================#
 # Test cases are automatically added to the test suite if they derive from 
@@ -380,6 +380,76 @@ class ViewPixelPng_TestCase(LinkAnalytics_DBTestCaseBase):
         
 class Access_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
+    
+
+def _put_htmldoc_newlines(data):
+    """Put newlines into html source where HtmlDocument places them."""
+    data = data.replace('<html>','<html>\n')
+    data = data.replace('</html>','</html>\n')
+    data = data.replace('</head>','</head>\n')
+    data = data.replace('</body>','</body>\n')
+    return data
+    
+class HtmlDocument_TestCase(LinkAnalytics_TestCaseBase):
+    def test_basic(self):
+        html = "<html><head></head><body></body></html>"
+        nlhtml = _put_htmldoc_newlines(html)
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, '')
+        self.assertEquals(doc.body, '')
+        self.assertEquals(doc.assemble(), nlhtml)
+        
+    def test_with_title(self):
+        html = "<html><head><title>A Title</title></head><body></body></html>"
+        nlhtml = _put_htmldoc_newlines(html)
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, '<title>A Title</title>')
+        self.assertEquals(doc.body, '')
+        self.assertEquals(doc.assemble(), nlhtml)
+        
+    def test_with_bodycontent(self):
+        html = "<html><head></head><body><h1>A heading.</h1><p>A paragraph.</p></body></html>"
+        nlhtml = _put_htmldoc_newlines(html)
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, '')
+        self.assertEquals(doc.body, '<h1>A heading.</h1><p>A paragraph.</p>')
+        self.assertEquals(doc.assemble(), nlhtml)
+        
+    def test_with_pi(self):
+        html = "<?xml version='1.0'?><html><head></head><body></body></html>"
+        nlhtml = _put_htmldoc_newlines(html)
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, "<?xml version='1.0'?>")
+        self.assertEquals(doc.head, '')
+        self.assertEquals(doc.body, '')
+        self.assertEquals(doc.assemble(), nlhtml)
+        
+class CompileEmail_TestCase(LinkAnalytics_TestCaseBase):
+    def test_basic(self):
+        htmlsrc = "<html><head></head><body></body></html>"
+        text,html = LAemail.compile_email(htmlsrc)
+        self.assertEquals(text, '')
+        self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
+        
+    def test_headcontent(self):
+        htmlsrc = "<html><head><title>A Title</title></head><body></body></html>"
+        text,html = LAemail.compile_email(htmlsrc)
+        self.assertEquals(text, '')
+        self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
+        
+    def test_bodycontent(self):
+        htmlsrc = "<html><head></head><body><p>A paragraph.</p></body></html>"
+        text,html = LAemail.compile_email(htmlsrc)
+        self.assertEquals(text, '\nA paragraph.\n')
+        self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
+        
     
 class Track_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
     def test_trail(self):

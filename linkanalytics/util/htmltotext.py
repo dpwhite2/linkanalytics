@@ -13,6 +13,7 @@ class HTMLtoText(HTMLParser):
         self._init_handlers()
         self.width = 80
         self.buf = ''
+        self.inbody = False
         
     def __str__(self):
         return self.buf
@@ -21,6 +22,7 @@ class HTMLtoText(HTMLParser):
         self.handlers = {
             'p': (self.p_start, self.p_end),
             'br': (self.br_tag, self._donothing_endtag),
+            'body': (self.body_start, self.body_end),
             #'ul': (ul_start, ul_end),
             #'ol': (ol_start, ol_end),
             #'li': (li_start, li_end),
@@ -39,6 +41,11 @@ class HTMLtoText(HTMLParser):
         self.buf += '\n'
     def p_end(self):
         self.buf += '\n'
+        
+    def body_start(self, attrs):
+        self.inbody = True
+    def body_end(self):
+        self.inbody = False
     
     def handle_starttag(self, tag, attrs):
         self.handlers.get(tag, (self._donothing_starttag,))[0](attrs)
@@ -60,7 +67,8 @@ class HTMLtoText(HTMLParser):
         self.buf += codecs.iterencode(u,'utf-8')
         
     def handle_data(self, data):
-        self.buf += data
+        if self.inbody:
+            self.buf += data
 
 
 
