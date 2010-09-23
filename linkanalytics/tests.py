@@ -450,6 +450,38 @@ class CompileEmail_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(text, '\nA paragraph.\n')
         self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
         
+    def test_trackTrail(self):
+        htmlsrc = "<html><head></head><body>{% track 'trail' 'path/file.ext' %}</body></html>"
+        tag = '{% trackedurl linkid "path/file.ext" %}'
+        htmlres = """<html><head></head><body>{0}</body></html>""".format(tag)
+        htmlres = _put_htmldoc_newlines(htmlres)
+        text,html = LAemail.compile_email(htmlsrc)
+        self.assertEquals(text, tag)
+        self.assertEquals(html, htmlres)
+        
+        
+class InstantiateEmails_TestCase(LinkAnalytics_TestCaseBase):
+    def test_basic(self):
+        htmlsrc = "<html><head></head><body></body></html>"
+        textsrc = ""
+        urlbase = 'http://example.com'
+        uuid = '0'*32
+        it = LAemail.instantiate_emails(textsrc,htmlsrc,urlbase,(uuid,))
+        text,html = it.next()
+        self.assertEquals(text, textsrc)
+        self.assertEquals(html, htmlsrc)
+        
+    def test_trail(self):
+        htmlsrc = "<html><head></head><body>{% trackedurl linkid 'path/to/file.ext' %}</body></html>"
+        textsrc = "{% trackedurl linkid 'path/to/file.ext' %}"
+        urlbase = 'http://example.com'
+        uuid = '0'*32
+        it = LAemail.instantiate_emails(textsrc,htmlsrc,urlbase,(uuid,))
+        text,html = it.next()
+        url = 'http://example.com/{0}/path/to/file.ext'.format(uuid)
+        self.assertEquals(text, '{0}'.format(url))
+        self.assertEquals(html, "<html><head></head><body>{0}</body></html>".format(url))
+
     
 class Track_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
     def test_trail(self):
@@ -486,6 +518,31 @@ class Track_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
         s = t.render(c)
         self.assertEquals(s, '\n{% trackedurl linkid "gpx" %}\n{% trackedurl linkid "ppx" %}\n')
         
+
+class TrackedUrl_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
+    def test_basic(self):
+        templtxt = """\
+            {% load tracked_links %}
+            {% trackedurl linkid "path/to/file.ext" %}
+            """
+        templtxt = textwrap.dedent(templtxt)
+        t = Template(templtxt)
+        uuid = '0'*32
+        c = Context({'linkid':uuid, 'urlbase':'http://example.com'})
+        s = t.render(c)
+        self.assertEquals(s, '\nhttp://example.com/{0}/path/to/file.ext\n'.format(uuid))
+        
+    def test_url(self):
+        templtxt = """\
+            {% load tracked_links %}
+            {% trackedurl linkid "http/www.example.com/path/file.html" %}
+            """
+        templtxt = textwrap.dedent(templtxt)
+        t = Template(templtxt)
+        uuid = '0'*32
+        c = Context({'linkid':uuid, 'urlbase':'http://example.com'})
+        s = t.render(c)
+        self.assertEquals(s, '\nhttp://example.com/{0}/http/www.example.com/path/file.html\n'.format(uuid))
         
     
 class HTMLtoText_TestCase(LinkAnalytics_TestCaseBase):

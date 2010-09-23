@@ -44,7 +44,6 @@ class Trackee(models.Model):
         return u'%s'%self.username
     
     def url_instances(self):
-        ##return TrackedUrlInstance.objects.filter(trackee=self.pk)
         return self.trackedurlinstance_set.all()
     def urls(self):
         return self.trackedurl_set.all()
@@ -64,7 +63,6 @@ class Trackee(models.Model):
 class TrackedUrl(models.Model):
     name =      models.CharField(max_length=256)
     comments =  models.TextField(blank=True)
-    #targets =   models.ManyToManyField(TrackedUrlTarget, through='UrlTargetPair')
     trackees =  models.ManyToManyField(Trackee, through='TrackedUrlInstance')
     
     def __unicode__(self):
@@ -74,11 +72,9 @@ class TrackedUrl(models.Model):
         return self.trackedurlinstance_set.all()
         
     def url_instances_read(self):
-        #return self.trackedurlinstance_set.filter(access_count__gt=0)
-        #return self.trackedurlinstance_set.filter(trackedurlaccess__count__gt=0)
+        # instances containing TrackedUrlAccesses with a count value at least 1
         return self.trackedurlinstance_set.annotate(num_accesses=models.Count('trackedurlaccess__count')).filter(num_accesses__gt=0)
         
-        # instances containing TrackedUrlAccesses with a count value at least 1
                 
     def add_trackee(self, trackee):
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
@@ -88,52 +84,16 @@ class TrackedUrl(models.Model):
 
 def _create_uuid():
     return uuid.uuid4().hex
-    
 
-class Accessed(object):
-    """Class that simplifies cancelling TrackedUrlInstance accesses."""
-    # TODO: consider concurrency issues... 
-    #   What if another access happens between __init__() and undo()?
-    def __init__(self, instance):
-        self.instance = instance
-        # Save the current 'last_access' in case the new access must be undone
-        self.last_access = self.instance.recent_access
-        
-        self.instance.access_count += 1
-        
-        today = datetime.date.today()
-        if not self.instance.first_access:
-            self.instance.first_access = today
-        self.instance.recent_access = today
-        self.instance.save()
-        
-    def undo(self):
-        # Roll back changes
-        self.instance.access_count -= 1
-        
-        # Only write first_access if this was the "first_access"
-        if self.instance.access_count==0:
-            self.instance.first_access = None
-        self.instance.recent_access = self.last_access
-        self.instance.save()
-        
 
 class TrackedUrlInstance(models.Model):
     trackedurl =    models.ForeignKey(TrackedUrl)
     trackee =       models.ForeignKey(Trackee)
     uuid =          models.CharField(max_length=32, editable=False, default=_create_uuid, unique=True)
-    
     notified =      models.DateField(null=True, blank=True)
-    #first_access =  models.DateField(null=True, blank=True)
-    #recent_access = models.DateField(null=True, blank=True)
-    #access_count =  models.IntegerField(default=0)
     
     class Meta:
-        unique_together = (("trackedurl", "trackee", ),)
-        
-    #def __init__(self, *args, **kwargs):
-    #    super(TrackedUrlInstance, self).__init__(self, *args, **kwargs)
-        
+        unique_together = (("trackedurl", "trackee", ),)        
     
     def __unicode__(self):
         return u'%s, %s'%(self.trackedurl, self.trackee)

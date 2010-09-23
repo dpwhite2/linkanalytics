@@ -136,15 +136,20 @@ def compile_text_email(content, header='', footer=''):
     text.add_footer(footer)
     return text.compile()
 
-#==============================================================================#
 
-def instantiate_emails(text,html,uuid_iter,urlbase):
+#==============================================================================#
+def instantiate_emails(text, html, urlbase, uuid_iter):
+    """An iterator that returns pairs of instanted email contents.  The return 
+       value is a tuple: (text,html).
+    """
     # TODO: in progress....
-    ttext = Template(text)
-    thtml = Template(html)
+    # TODO: make urlbase a settings variable
+    ttext = Template('{% load tracked_links %}'+text)
+    thtml = Template('{% load tracked_links %}'+html)
     
     for uuid in uuid_iter:
         c = Context({'linkid': uuid, 'urlbase': urlbase})
         yield (ttext.render(c),thtml.render(c))
+    
 
 

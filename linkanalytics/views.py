@@ -11,11 +11,6 @@ import datetime
 import sys
 import traceback
 
-##from linkanalytics import targeturls
-
-
-##from linkanalytics.targeturls import urlpatterns
-
 # this should be a configurable setting
 _TARGETURLCONF = "linkanalytics.targeturls"
 

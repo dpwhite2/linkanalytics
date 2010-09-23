@@ -63,34 +63,31 @@ register.tag('track',track)
     
     
 class TrackedurlNode(template.Node):
-    def __init__(self, urlbase, linkid, trailpath):
-        self.urlbase = template.Variable(urlbase)
+    def __init__(self, linkid, trailpath):
+        self.urlbase = template.Variable('urlbase')
         self.linkid = template.Variable(linkid)
         self.trailpath = trailpath
         
     def render(self, context):
         try:
             urlbase = self.urlbase.resolve(context)
-            linkid = self.linkid.resolve(linkid)
+            linkid = self.linkid.resolve(context)
             return '{u}/{id}/{p}'.format(u=urlbase, id=linkid, p=self.trailpath)
-        except:
+        except Exception as e:
             return ''
     
 
 def trackedurl(parser, token):
     try:
-        tagname,urlbase,linkid,trailpath = token.split_contents()
+        tagname,linkid,trailpath = token.split_contents()
     except ValueError:
-        raise template.TemplateSyntaxError, "%r tag requires three arguments" % token.contents.split()[0]
-    for v in (urlbase, linkid, trailpath):
-        if not (v[0] == v[-1] and v[0] in ('"', "'")):
-            raise template.TemplateSyntaxError, "%r tag's arguments should be in quotes" % tagname
+        raise template.TemplateSyntaxError, "%r tag requires two arguments" % token.contents.split()[0]
+    if not (trailpath[0] == trailpath[-1] and trailpath[0] in ('"', "'")):
+        raise template.TemplateSyntaxError, "%r tag's second argument should be in quotes" % tagname
     
-    urlbase = urlbase[1:-1]
-    linkid = linkid[1:-1]
     trailpath = trailpath[1:-1]
     
-    return TrackedurlNode(urlbase, linkid, trailpath)
+    return TrackedurlNode(linkid, trailpath)
 
 register.tag('trackedurl',trackedurl)
 

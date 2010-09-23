@@ -1,5 +1,4 @@
 from HTMLParser import HTMLParser
-#from cStringIO import StringIO
 import htmlentitydefs
 import codecs
 
