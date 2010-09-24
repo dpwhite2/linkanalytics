@@ -1,17 +1,23 @@
 from HTMLParser import HTMLParser
 import htmlentitydefs
 import codecs
+import functools
 
 # Purpose: to convert an HTML document intended for email content into plain text.
 
 class HTMLtoText(HTMLParser):
-    def __init__(self):
+    def __init__(self, full_document=True):
+        """If full_document is True, only text within the <body> element will 
+           be output to plain text--all other text will be ignored.  If False, 
+           all text will be output.
+        """
         # Base class of HTMLParser.HTMLParser is an old-style class.  Cannot 
         # use 'super()' here.
         HTMLParser.__init__(self)
         self._init_handlers()
         self.width = 80
         self.buf = ''
+        self.full_document = full_document
         self.inbody = False
         
     def __str__(self):
@@ -25,7 +31,9 @@ class HTMLtoText(HTMLParser):
             #'ul': (ul_start, ul_end),
             #'ol': (ol_start, ol_end),
             #'li': (li_start, li_end),
-            #'h1': (h1_start, h1_end),
+            'h1': (functools.partial(HTMLtoText.heading_start,self,level=1), 
+                   functools.partial(HTMLtoText.heading_end,self,level=1)
+                  ),
             }
             
     def _donothing_starttag(self, attrs):
@@ -39,6 +47,11 @@ class HTMLtoText(HTMLParser):
     def p_start(self, attrs):
         self.buf += '\n'
     def p_end(self):
+        self.buf += '\n'
+        
+    def heading_start(self, attrs, level):
+        self.buf += '\n'
+    def heading_end(self, level):
         self.buf += '\n'
         
     def body_start(self, attrs):
@@ -66,7 +79,7 @@ class HTMLtoText(HTMLParser):
         self.buf += codecs.iterencode(u,'utf-8')
         
     def handle_data(self, data):
-        if self.inbody:
+        if (not self.full_document) or self.inbody:
             self.buf += data
 
 

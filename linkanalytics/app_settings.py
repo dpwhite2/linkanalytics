@@ -9,6 +9,7 @@ from django.conf import settings
 # linkanalytics app base url (everything before the '/linkanalytics/...')
 #   ... or get this from HttpRequest, since email has to be composed from a view.  But then that limits auto delivery. hmmm...
 # TrackedUrlAccess.url length (default: 3000?)
+# Email and DraftEmail: max subject length
 # optional custom targeturls module (so user can add his/her own views)
 # extra targetviews directory? (so user can non-intrusively override linkanalytics defaults)
 # Not configurable by user:

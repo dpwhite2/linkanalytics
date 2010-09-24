@@ -1,9 +1,10 @@
-
 import datetime
 import unittest
 import textwrap
+import re
 
 from django.test import TestCase
+from django.core import mail as django_email
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse as urlreverse
 from django.db import IntegrityError
@@ -31,8 +32,23 @@ class UserLogin_Context(object):
         self.client.logout()
 
 #==============================================================================#
+_re_whitespace = re.compile(r'\s+')
+_HTMLTAG = r'''</?[A-Za-z0-9 ='"\\:.%+]+>'''  # includes the tag and attributes
+_re_adjacenttags = re.compile(r'('+_HTMLTAG+r')\s+(?='+_HTMLTAG+r')')
+
 class LinkAnalytics_TestCaseBase(TestCase):
-    pass
+    def assertEqualsHtml(self, a, b):
+        """Check whether two objects, a and b, are equal when basic HTML rules 
+           are taken into account.  This includes regarding all whitespace as 
+           identical.  The objects must be strings.
+        """
+        aa = _re_adjacenttags.sub(r'\1', a).strip()
+        bb = _re_adjacenttags.sub(r'\1 ', b).strip()
+        aa = _re_whitespace.sub(' ', aa)
+        bb = _re_whitespace.sub(' ', bb)
+        msg = '"{0}" != "{1}"'.format(a,b)
+        msg += '\n\nmodified strings:\n"{0}" != "{1}"'.format(aa,bb)
+        self.assertTrue(aa==bb, msg)
     
 class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
     urls = 'linkanalytics.tests_urls'
@@ -49,11 +65,12 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         for user in self.users:
             user.delete()
         self.users = [
-                User.objects.create_user(username="user%d"%i,email="",password="password") 
-                for i in range(2)
+                User.objects.create_user(username="user%d"%i,email="user%d@example.com"%i,password="password") 
+                for i in range(n)
             ]
     def tearDown(self):
         TrackedUrl.objects.all().delete()
+        TrackedUrlAccess.objects.all().delete()
         TrackedUrlInstance.objects.all().delete()
         #TrackedUrlTarget.objects.all().delete()
         Trackee.objects.all().delete()
@@ -73,6 +90,16 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         t = Trackee(username=username)
         t.save()
         return t
+        
+#==============================================================================#
+# Utility function used by a many tests below
+def _put_htmldoc_newlines(data):
+    """Put newlines into html source where HtmlDocument places them."""
+    data = data.replace('<html>','<html>\n')
+    data = data.replace('</html>','</html>\n')
+    data = data.replace('</head>','</head>\n')
+    data = data.replace('</body>','</body>\n')
+    return data
     
 #==============================================================================#
 # Model tests:
@@ -149,8 +176,8 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_DBTestCaseBase):
         a1 = TrackedUrlAccess(instance=i1, time=otherday, count=1, url='')
         a1.save()
         
-        self.assertEquals(i1.recent_access, otherday)
-        self.assertEquals(i1.first_access, otherday)
+        self.assertEquals(i1.recent_access.date(), otherday.date())
+        self.assertEquals(i1.first_access.date(), otherday.date())
         self.assertEquals(i1.access_count, 1)
         self.assertEquals(i1.was_accessed(), True)
         
@@ -282,9 +309,73 @@ class TrackedUrl_TestCase(LinkAnalytics_DBTestCaseBase):
         self.assertEquals(u1.url_instances_read().count(),1)
         
         
-        
+    
 class Email_TestCase(LinkAnalytics_DBTestCaseBase):
-    pass
+    # This class tests both the Email and DraftEmail classes
+    def test_compile_basic(self):
+        de = DraftEmail(fromemail='', subject='Subject')
+        html = '<html><head></head><body></body></html>'
+        de.message = html
+        de.save()
+        e = de._compile()
+        
+        self.assertEquals(e.subject, 'Subject')
+        self.assertEquals(e.txtmsg, '')
+        self.assertEqualsHtml(e.htmlmsg, html)
+        
+        # There's only one TrackedUrl object so far
+        self.assertEquals(TrackedUrl.objects.count(), 1)
+        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
+        
+    def test_send_basic(self):
+        """Sends an email to no one"""
+        de = DraftEmail(fromemail='', subject='Subject')
+        html = '<html><head></head><body></body></html>'
+        de.message = html
+        de.save()
+        e = de.send()
+        
+        self.assertTrue(de.sent)
+        self.assertEquals(e.subject, 'Subject')
+        self.assertEquals(e.txtmsg, '')
+        self.assertEqualsHtml(e.htmlmsg, html)
+        
+        # There's only one TrackedUrl object so far
+        self.assertEquals(TrackedUrl.objects.count(), 1)
+        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
+        
+    def test_send_single(self):
+        t = Trackee(username='user', emailaddress='user@example.com')
+        t.save()
+        de = DraftEmail(fromemail='', subject='Subject')
+        html = '<html><head></head><body></body></html>'
+        de.message = html
+        de.save()
+        de.pending_recipients.add(t)
+        de.save()
+        e = de.send()
+        
+        self.assertTrue(de.sent)
+        self.assertEquals(e.subject, 'Subject')
+        self.assertEquals(e.txtmsg, '')
+        self.assertEqualsHtml(e.htmlmsg, html)
+        
+        # There's only one TrackedUrl object so far
+        self.assertEquals(TrackedUrl.objects.count(), 1)
+        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
+        
+        self.assertEquals(len(django_email.outbox), 1)
+        self.assertEquals(django_email.outbox[0].subject, 'Subject')
+        self.assertEquals(django_email.outbox[0].recipients(), ['user@example.com'])
+        
+    # check that DraftEmails cannot be sent more than once
+    # check that the same email cannot be sent to the same recipient more than once
+    # check that emails actually get sent
+    # check that each recipient has a different uuid
+    # check that EmailRecipients contains the new recipients of the email
+        
+        
+    
         
 #==============================================================================#
 # View tests:
@@ -382,82 +473,82 @@ class Access_TestCase(LinkAnalytics_DBTestCaseBase):
     pass
     
 
-def _put_htmldoc_newlines(data):
-    """Put newlines into html source where HtmlDocument places them."""
-    data = data.replace('<html>','<html>\n')
-    data = data.replace('</html>','</html>\n')
-    data = data.replace('</head>','</head>\n')
-    data = data.replace('</body>','</body>\n')
-    return data
     
 class HtmlDocument_TestCase(LinkAnalytics_TestCaseBase):
     def test_basic(self):
         html = "<html><head></head><body></body></html>"
-        nlhtml = _put_htmldoc_newlines(html)
         doc = LAemail.HtmlDocument(html)
         
         self.assertEquals(doc.prefix, '')
         self.assertEquals(doc.head, '')
         self.assertEquals(doc.body, '')
-        self.assertEquals(doc.assemble(), nlhtml)
+        self.assertEqualsHtml(doc.assemble(), html)
         
     def test_with_title(self):
         html = "<html><head><title>A Title</title></head><body></body></html>"
-        nlhtml = _put_htmldoc_newlines(html)
         doc = LAemail.HtmlDocument(html)
         
         self.assertEquals(doc.prefix, '')
         self.assertEquals(doc.head, '<title>A Title</title>')
         self.assertEquals(doc.body, '')
-        self.assertEquals(doc.assemble(), nlhtml)
+        self.assertEqualsHtml(doc.assemble(), html)
         
     def test_with_bodycontent(self):
         html = "<html><head></head><body><h1>A heading.</h1><p>A paragraph.</p></body></html>"
-        nlhtml = _put_htmldoc_newlines(html)
+        #nlhtml = _put_htmldoc_newlines(html)
         doc = LAemail.HtmlDocument(html)
         
         self.assertEquals(doc.prefix, '')
         self.assertEquals(doc.head, '')
         self.assertEquals(doc.body, '<h1>A heading.</h1><p>A paragraph.</p>')
-        self.assertEquals(doc.assemble(), nlhtml)
+        self.assertEqualsHtml(doc.assemble(), html)
         
     def test_with_pi(self):
         html = "<?xml version='1.0'?><html><head></head><body></body></html>"
-        nlhtml = _put_htmldoc_newlines(html)
+        #nlhtml = _put_htmldoc_newlines(html)
         doc = LAemail.HtmlDocument(html)
         
         self.assertEquals(doc.prefix, "<?xml version='1.0'?>")
         self.assertEquals(doc.head, '')
         self.assertEquals(doc.body, '')
-        self.assertEquals(doc.assemble(), nlhtml)
+        self.assertEqualsHtml(doc.assemble(), html)
         
 class CompileEmail_TestCase(LinkAnalytics_TestCaseBase):
     def test_basic(self):
         htmlsrc = "<html><head></head><body></body></html>"
         text,html = LAemail.compile_email(htmlsrc)
         self.assertEquals(text, '')
-        self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
+        self.assertEqualsHtml(html, htmlsrc)
         
     def test_headcontent(self):
         htmlsrc = "<html><head><title>A Title</title></head><body></body></html>"
         text,html = LAemail.compile_email(htmlsrc)
         self.assertEquals(text, '')
-        self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
+        self.assertEqualsHtml(html, htmlsrc)
         
     def test_bodycontent(self):
         htmlsrc = "<html><head></head><body><p>A paragraph.</p></body></html>"
         text,html = LAemail.compile_email(htmlsrc)
         self.assertEquals(text, '\nA paragraph.\n')
-        self.assertEquals(html, _put_htmldoc_newlines(htmlsrc))
+        self.assertEqualsHtml(html, htmlsrc)
         
     def test_trackTrail(self):
         htmlsrc = "<html><head></head><body>{% track 'trail' 'path/file.ext' %}</body></html>"
         tag = '{% trackedurl linkid "path/file.ext" %}'
         htmlres = """<html><head></head><body>{0}</body></html>""".format(tag)
-        htmlres = _put_htmldoc_newlines(htmlres)
         text,html = LAemail.compile_email(htmlsrc)
         self.assertEquals(text, tag)
-        self.assertEquals(html, htmlres)
+        self.assertEqualsHtml(html, htmlres)
+        
+    def test_header_footer(self):
+        htmlsrc = "<html><head></head><body><p>A paragraph.</p></body></html>"
+        header = '<h1>A Header</h1>'
+        footer = '<div>A footer.</div>'
+        htmlres = "<html><head></head><body>{0}<p>A paragraph.</p>{1}</body></html>".format(header,footer)
+        textres = "\n{0}\n\nA paragraph.\n{1}".format("A Header","A footer.")
+        text,html = LAemail.compile_email(htmlsrc, html_header=header, html_footer=footer)
+        self.assertEquals(text, textres)
+        self.assertEqualsHtml(html, htmlres)
         
         
 class InstantiateEmails_TestCase(LinkAnalytics_TestCaseBase):

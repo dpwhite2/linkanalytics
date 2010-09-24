@@ -94,8 +94,8 @@ class TextEmailContent(EmailContent):
 
 
 #==============================================================================#
-def _html_to_text(html):
-    htt = HTMLtoText()
+def _html_to_text(html, full_document=True):
+    htt = HTMLtoText(full_document)
     htt.feed(html)
     return str(htt)
 
@@ -109,9 +109,9 @@ def compile_email(content, **kwargs):
     pixelimage_type = kwargs.get('pixelimage_type',None)
     
     if text_header is None:
-        text_header = _html_to_text(html_header)
+        text_header = _html_to_text(html_header, full_document=False)
     if text_footer is None:
-        text_footer = _html_to_text(html_footer)
+        text_footer = _html_to_text(html_footer, full_document=False)
     
     if content_type=='html':
         html = content

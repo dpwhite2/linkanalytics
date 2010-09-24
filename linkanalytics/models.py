@@ -6,6 +6,9 @@ from django.core.exceptions import ValidationError
 
 import uuid
 import datetime
+import itertools
+
+from linkanalytics import email as la_email
 
 #==============================================================================#
 
@@ -141,56 +144,96 @@ class TrackedUrlAccess(models.Model):
 class EmailAlreadySentError(Exception):
     """An attempt was made to send a DraftEmail object that was already sent."""
     
+def _create_trackedurl_for_email(subject):
+    u = TrackedUrl(name='_<email>_{0}_{1}'.format(subject,_create_uuid()))
+    u.save()
+    return u
+    
 class Email(models.Model):
-    fromemail =     models.EmailField()
+    fromemail =     models.EmailField(blank=True)
     trackedurl =    models.ForeignKey(TrackedUrl)
     subject =       models.CharField(max_length=256)
     txtmsg =        models.TextField()
     htmlmsg =       models.TextField()
     
-def sendemail(email, recipients):
-    trackedurls,htmltemplate,txttemplate = parse_email_message(email.message)
-    subjtemplate = parse_subject(email.subject)
-    msgs = []
-    for recipient in recipients:
-        subj = subjtemplate.process(recipient)
-        html = htmltemplate.process(recipient)
-        txt = txttemplate.process(recipient)
-        msg = django.core.mail.EmailMultiAlternatives(subj, txt, email.fromemail, [recipient])
+    def send(self, recipients):
+        if not recipients or not recipients.exists():
+            return
+        # Note: msgs = list of django.core.mail.EmailMultiAlternatives
+        msgs = list(
+                self._create_multipart_email(text,html,recipient) 
+                for (recipient,(text,html)) 
+                in itertools.izip(recipients, self._instantiate_emails(recipients))
+                )
+        
+        r = EmailRecipients(email=self, datesent=datetime.date.today())
+        r.save()
+        for recipient in recipients:
+            r.recipients.add(recipient)
+        r.save()
+        
+        cx = mail.get_connection()
+        cx.send_messages(msgs)
+        
+    def _create_multipart_email(self, text, html, recipient):
+        msg = mail.EmailMultiAlternatives(
+                                self.subject, text, self.fromemail, 
+                                [recipient.emailaddress]
+                                )
         msg.attach_alternative(html, "text/html")
-        msgs.append(msg)
+        return msg
+        
+    def _instantiate_emails(self, recipients):
+        """Returns an iterator over (text,html) pairs."""
+        urlbase = ''  # TODO: set me
+        return la_email.instantiate_emails(
+                            self.txtmsg, self.htmlmsg, urlbase, 
+                            self._generate_urlinstances(recipients)
+                            )
     
-    cx = django.core.mail.get_connection()
-    cx.send_messages(msgs)
-    
-    #e = Email(fromemail=self.fromemail, subject=self.subject, message=self.message)
-    email.trackedurls.add(*trackedurls)
-    email.save()
-    
-    r = EmailRecipients(email=email, datesent=datetime.date.today())
-    r.recipients.add(self.pending_recipients)
-    r.save()
+    def _generate_urlinstances(self, recipients):
+        """Returns an iterator over the uuids of newly created UrlInstances."""
+        for recipient in recipients:
+            t = TrackedUrlInstance(trackedurl=self.trackedurl, trackee=recipient)
+            t.save()
+            yield t
     
 
 class DraftEmail(models.Model):
     # An Email object is created when the EmailDraft is sent.  At that point, the EmailDraft may not be modified.
     # Also when sent, pending_recipients is flushed to SentEmail.recipients
     pending_recipients = models.ManyToManyField(Trackee)
-    fromemail =     models.EmailField()
-    subject =       models.CharField(max_length=256)
-    message =       models.TextField()
+    fromemail =     models.EmailField(blank=True)
+    subject =       models.CharField(max_length=256, blank=True)
+    message =       models.TextField(blank=True)
     sent =          models.BooleanField(default=False)
     
-    def send(self):
-        # This method is under construction.
+    def send(self, **kwargs):
+        """Send a DraftEmail to the pending_recipients.  Once sent the first 
+           time, the DraftEmail may not be sent again.  Instead, use the send 
+           method on Email.
+        """
         if self.sent:
             raise EmailAlreadySentError()
-        recipients = parse_recipients(self.pending_recipients)
-        e = Email(fromemail=self.fromemail, subject=self.subject, message=self.message)
-        sendemail(e, recipients)
+        email_model = self._compile(**kwargs)
+        email_model.save()
+        email_model.send(self.pending_recipients.all())
         
         self.pending_recipients.clear()
         self.sent = True
+        self.save()
+        return email_model
+        
+    def _compile(self, **kwargs):
+        if not self.subject:
+            self.subject = '[No Subject]'
+        text,html = la_email.compile_email(self.message, **kwargs)
+        u = _create_trackedurl_for_email(self.subject)
+        email_model = Email( fromemail=self.fromemail, trackedurl=u, 
+                             subject=self.subject, txtmsg=text, htmlmsg=html )
+        
+        return email_model
+        
     
 class EmailRecipients(models.Model):
     email =         models.ForeignKey(Email)
