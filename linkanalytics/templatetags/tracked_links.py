@@ -1,5 +1,6 @@
 from django import template
 import urlparse
+from django.core.urlresolvers import reverse as urlreverse
 
 register = template.Library()
 
@@ -72,7 +73,8 @@ class TrackedurlNode(template.Node):
         try:
             urlbase = self.urlbase.resolve(context)
             linkid = self.linkid.resolve(context)
-            return '{u}/{id}/{p}'.format(u=urlbase, id=linkid, p=self.trailpath)
+            urlpart = urlreverse('linkanalytics-accessview', kwargs={'uuid': linkid, 'tailpath':self.trailpath})
+            return '{base}{p}'.format(base=urlbase, p=urlpart)
         except Exception as e:
             return ''
     

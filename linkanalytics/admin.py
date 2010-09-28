@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee, Email #TrackedUrlTarget, TrackedUrlStats
+from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
+from linkanalytics.models import Email, DraftEmail
 
 def trackees_count(obj):
     return '%d'%obj.trackees.count()
@@ -27,6 +28,7 @@ admin.site.register(TrackedUrl, TrackedUrlAdmin)
 admin.site.register(TrackedUrlInstance, TrackedUrlInstanceAdmin)
 admin.site.register(Trackee, TrackeeAdmin)
 admin.site.register(Email)
+admin.site.register(DraftEmail)
 
 
 

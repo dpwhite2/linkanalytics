@@ -99,9 +99,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
 )
 
-BROKER_HOST =     'localhost'
-BROKER_PORT =     5672
-BROKER_USER =     'dpwhite2_user'
-BROKER_PASSWORD = 'Fraz8pHAy6sep3Et'
-BROKER_VHOST =    'dpwhite2_vhost'
+
+
+#==============================================================================#
+# Linkanalytics App settings:
 

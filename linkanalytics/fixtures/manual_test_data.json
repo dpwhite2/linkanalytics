@@ -1,0 +1,53 @@
+[
+    {
+        "pk": 1, 
+        "model": "linkanalytics.trackee", 
+        "fields": {
+            "username": "Dave", 
+            "first_name": "", 
+            "last_name": "", 
+            "comments": "", 
+            "emailaddress": "", 
+            "is_django_user": false
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "linkanalytics.trackedurl", 
+        "fields": {
+            "name": "test_url", 
+            "comments": ""
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "linkanalytics.trackedurlinstance", 
+        "fields": { 
+            "trackee": 1, 
+            "uuid": "910d97e04c9342fe83dfd3234a13cd2a", 
+            "trackedurl": 1
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "linkanalytics.draftemail", 
+        "fields": {
+            "fromemail": "", 
+            "subject": "Test Email",
+            "message": "This is a message.",
+            "sent": false,
+            "pixelimage": false
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "linkanalytics.draftemail", 
+        "fields": {
+            "fromemail": "", 
+            "subject": "Test Sent Email",
+            "message": "This email was sent.  It should not be editable.",
+            "sent": true,
+            "pixelimage": false
+        }
+    }
+]

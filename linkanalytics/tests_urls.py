@@ -12,7 +12,8 @@ from django.conf.urls.defaults import *
 
 PREFIX = r'^linkanalytics/'
 urlpatterns = patterns('linkanalytics',
-    (PREFIX+r'create_target/$', 'views.createTrackedUrlTarget'),
+    (r'^compose_email/$', 'views.composeEmail'),
+    (r'^compose_email/(?P<emailid>\d+)/$', 'views.composeEmail'),
     (PREFIX+r'create_trackee/$', 'views.createTrackee'),
     (PREFIX+r'create_trackedurl/$', 'views.createTrackedUrl'),
     # The Regex for accessTrackedUrl: the ending '/' is optional.

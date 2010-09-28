@@ -4,8 +4,8 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import resolve, Resolver404
 
-from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance #, TrackedUrlTarget, TrackedUrlStats
-from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm #, TrackedUrlTargetForm
+from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance, Email, DraftEmail #, TrackedUrlTarget, TrackedUrlStats
+from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm, ComposeEmailForm #, TrackedUrlTargetForm
 
 import datetime
 import sys
@@ -61,23 +61,33 @@ def createTrackee(request):
     return render_to_response('linkanalytics/create_trackee.html',
                              {'form': form, },
                               context_instance=RequestContext(request))
-    
-def createTrackedUrlTarget(request):
+
+
+def composeEmail(request, emailid=None):
     if request.method == 'POST': # If the form has been submitted...
-        form = TrackedUrlTargetForm(request.POST, instance=Trackee()) # A form bound to the POST data
+        if emailid is not None: 
+            instance = DraftEmail.objects.get(pk=emailid)
+        else:
+            instance = DraftEmail()
+        form = ComposeEmailForm(request.POST, instance=instance) # A form bound to the POST data
         if form.is_valid(): # All validation rules pass
             # Process the data in form.cleaned_data
-            form.save()
-            return HttpResponseRedirect('/linkanalytics/create_target/') # Redirect after POST
+            draft = form.save()
+            if 'do_save' in request.POST:
+                return HttpResponseRedirect('/linkanalytics/compose_email/{0}/'.format(draft.pk)) # Redirect after POST
+            elif 'do_send' in request.POST:
+                # TODO: create Email from DraftEmail, and send it
+                draft.send()
+                return HttpResponseRedirect('/linkanalytics/compose_email/{0}/'.format(draft.pk)) # Redirect after POST
     else:
-        form = TrackedUrlTargetForm() # An unbound form
+        if emailid is not None:
+            form = ComposeEmailForm(instance=DraftEmail.objects.get(pk=emailid))
+        else:
+            form = ComposeEmailForm()
 
-    return render_to_response('linkanalytics/create_target.html',
-                             {'form': form, },
+    return render_to_response('linkanalytics/compose_email.html',
+                             {'form': form, 'emailid': emailid},
                               context_instance=RequestContext(request))
-
-
-
 
 
 

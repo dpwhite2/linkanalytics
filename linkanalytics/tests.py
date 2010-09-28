@@ -2,6 +2,7 @@ import datetime
 import unittest
 import textwrap
 import re
+import xml.etree.ElementTree
 
 from django.test import TestCase
 from django.core import mail as django_email
@@ -15,6 +16,7 @@ from linkanalytics.models import TrackedUrl,TrackedUrlInstance,Trackee,Email,Dra
 
 from linkanalytics.util.htmltotext import HTMLtoText
 from linkanalytics import email as LAemail
+from linkanalytics import app_settings
 
 #==============================================================================#
 # Test cases are automatically added to the test suite if they derive from 
@@ -100,6 +102,16 @@ def _put_htmldoc_newlines(data):
     data = data.replace('</head>','</head>\n')
     data = data.replace('</body>','</body>\n')
     return data
+    
+def _urlreverse_redirect_http(uuid, domain, filepath=''):
+    urltail = urlreverse('redirect-http', urlconf='linkanalytics.targeturls', kwargs={'domain':domain,'filepath':filepath})
+    urltail = urltail[1:] # remove leading '/'
+    return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+    
+def _urlreverse_redirect_local(uuid, filepath):
+    urltail = urlreverse('redirect-local', urlconf='linkanalytics.targeturls', kwargs={'filepath':filepath})
+    urltail = urltail[1:] # remove leading '/'
+    return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
     
 #==============================================================================#
 # Model tests:
@@ -368,6 +380,48 @@ class Email_TestCase(LinkAnalytics_DBTestCaseBase):
         self.assertEquals(django_email.outbox[0].subject, 'Subject')
         self.assertEquals(django_email.outbox[0].recipients(), ['user@example.com'])
         
+    def test_send_pixelimage(self):
+        """Sends an email containing a pixelimage."""
+        t = Trackee(username='user', emailaddress='user@example.com')
+        t.save()
+        html = '<html><head></head><body></body></html>'
+        de = DraftEmail(fromemail='', subject='Subject')
+        de.message = html
+        de.pixelimage = True
+        de.save()
+        de.pending_recipients.add(t)
+        de.save()
+        eml = de.send()
+        self.assertTrue(de.sent)
+        
+        qs = TrackedUrlInstance.objects.filter(trackee=t)
+        self.assertEquals(qs.count(), 1)
+        uuid = qs[0].uuid
+        
+        self.assertEquals(len(django_email.outbox), 1)
+        msg = django_email.outbox[0]
+        content,mime = msg.alternatives[0]
+        self.assertEquals(mime, 'text/html')
+        print '\n{0}\n'.format(content)
+            
+        e = xml.etree.ElementTree.fromstring(content)
+        self.assertEquals(e.tag, 'html')
+        
+        body = e.find('body')
+        self.assertNotEquals(body, None)
+        
+        img = body.find('img')
+        self.assertNotEquals(img, None)
+        
+        src = img.get('src', default=None)
+        self.assertNotEquals(src, None)
+        
+        urltail = urlreverse('targetview-pixelpng', urlconf='linkanalytics.targeturls')
+        urltail = urltail[1:] # remove leading '/'
+        url = urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+        
+        self.assertEquals(src, '{0}{1}'.format(app_settings.URLBASE, url))
+        
     # check that DraftEmails cannot be sent more than once
     # check that the same email cannot be sent to the same recipient more than once
     # check that emails actually get sent
@@ -405,9 +459,10 @@ class ViewRedirect_TestCase(LinkAnalytics_DBTestCaseBase):
         #   URLINSTANCE  TARGETVIEW
         #   URLINSTANCE = /linkanalytics/access/{uuid}
         #   TARGETVIEW =  /r/linkanalytics/testurl/
-        urltail = urlreverse('redirect-local', urlconf='linkanalytics.targeturls', kwargs={'filepath':'linkanalytics/testurl/'})
-        urltail = urltail[1:] # remove leading '/'
-        url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
+        ##urltail = urlreverse('redirect-local', urlconf='linkanalytics.targeturls', kwargs={'filepath':'linkanalytics/testurl/'})
+        ##urltail = urltail[1:] # remove leading '/'
+        ##url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
+        url = _urlreverse_redirect_local(i.uuid, filepath='linkanalytics/testurl/')
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
         
@@ -430,9 +485,10 @@ class ViewRedirect_TestCase(LinkAnalytics_DBTestCaseBase):
         #   URLINSTANCE  TARGETVIEW
         #   URLINSTANCE = /linkanalytics/access/{uuid}
         #   TARGETVIEW =  /http/www.google.com/       
-        urltail = urlreverse('redirect-http', urlconf='linkanalytics.targeturls', kwargs={'domain':'www.google.com','filepath':''})
-        urltail = urltail[1:] # remove leading '/'
-        url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
+        url = _urlreverse_redirect_http(uuid=i.uuid, domain='www.google.com')
+        ##urltail = urlreverse('redirect-http', urlconf='linkanalytics.targeturls', kwargs={'domain':'www.google.com','filepath':''})
+        ##urltail = urltail[1:] # remove leading '/'
+        ##url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
         
         # Limitation of Django testing framework: non-local urls will not be 
         # accessed.  So, in this case, www.google.com is NOT actually accessed.  
@@ -513,6 +569,43 @@ class HtmlDocument_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(doc.body, '')
         self.assertEqualsHtml(doc.assemble(), html)
         
+    def test_blank_document(self):
+        html = ""
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, '')
+        self.assertEquals(doc.body, '')
+        self.assertEqualsHtml(doc.assemble(), "<html><head></head><body></body></html>")
+        
+    def test_tagless(self):
+        html = "Some content."
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, '')
+        self.assertEquals(doc.body, 'Some content.')
+        self.assertEqualsHtml(doc.assemble(), "<html><head></head><body>Some content.</body></html>")
+        
+    def test_bodyonly(self):
+        html = "<body>The body.</body>"
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, '')
+        self.assertEquals(doc.body, 'The body.')
+        self.assertEqualsHtml(doc.assemble(), "<html><head></head><body>The body.</body></html>")
+        
+    def test_nohtmlelem(self):
+        html = "<head>The head.</head><body>The body.</body>"
+        doc = LAemail.HtmlDocument(html)
+        
+        self.assertEquals(doc.prefix, '')
+        self.assertEquals(doc.head, 'The head.')
+        self.assertEquals(doc.body, 'The body.')
+        self.assertEqualsHtml(doc.assemble(), "<html><head>The head.</head><body>The body.</body></html>")
+
+
 class CompileEmail_TestCase(LinkAnalytics_TestCaseBase):
     def test_basic(self):
         htmlsrc = "<html><head></head><body></body></html>"
@@ -563,15 +656,16 @@ class InstantiateEmails_TestCase(LinkAnalytics_TestCaseBase):
         self.assertEquals(html, htmlsrc)
         
     def test_trail(self):
-        htmlsrc = "<html><head></head><body>{% trackedurl linkid 'path/to/file.ext' %}</body></html>"
-        textsrc = "{% trackedurl linkid 'path/to/file.ext' %}"
+        htmlsrc = "<html><head></head><body>{% trackedurl linkid 'r/path/to/file.ext' %}</body></html>"
+        textsrc = "{% trackedurl linkid 'r/path/to/file.ext' %}"
         urlbase = 'http://example.com'
         uuid = '0'*32
         it = LAemail.instantiate_emails(textsrc,htmlsrc,urlbase,(uuid,))
         text,html = it.next()
-        url = 'http://example.com/{0}/path/to/file.ext'.format(uuid)
-        self.assertEquals(text, '{0}'.format(url))
-        self.assertEquals(html, "<html><head></head><body>{0}</body></html>".format(url))
+        url = _urlreverse_redirect_local(uuid=uuid, filepath='path/to/file.ext')
+        ##url = 'http://example.com{0}/path/to/file.ext'.format(uuid)
+        self.assertEquals(text, '{0}{1}'.format(urlbase,url))
+        self.assertEquals(html, "<html><head></head><body>{0}{1}</body></html>".format(urlbase,url))
 
     
 class Track_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
@@ -614,14 +708,16 @@ class TrackedUrl_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
     def test_basic(self):
         templtxt = """\
             {% load tracked_links %}
-            {% trackedurl linkid "path/to/file.ext" %}
+            {% trackedurl linkid "r/path/to/file.ext" %}
             """
         templtxt = textwrap.dedent(templtxt)
         t = Template(templtxt)
         uuid = '0'*32
-        c = Context({'linkid':uuid, 'urlbase':'http://example.com'})
+        urlbase = 'http://example.com'
+        c = Context({'linkid':uuid, 'urlbase':urlbase})
         s = t.render(c)
-        self.assertEquals(s, '\nhttp://example.com/{0}/path/to/file.ext\n'.format(uuid))
+        url = _urlreverse_redirect_local(uuid=uuid, filepath='path/to/file.ext')
+        self.assertEquals(s, '\n{0}{1}\n'.format(urlbase,url))
         
     def test_url(self):
         templtxt = """\
@@ -631,9 +727,11 @@ class TrackedUrl_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
         templtxt = textwrap.dedent(templtxt)
         t = Template(templtxt)
         uuid = '0'*32
-        c = Context({'linkid':uuid, 'urlbase':'http://example.com'})
+        urlbase = 'http://example.com'
+        c = Context({'linkid':uuid, 'urlbase':urlbase})
         s = t.render(c)
-        self.assertEquals(s, '\nhttp://example.com/{0}/http/www.example.com/path/file.html\n'.format(uuid))
+        url = _urlreverse_redirect_http(uuid=uuid, domain='www.example.com', filepath='path/file.html')
+        self.assertEquals(s, '\n{0}{1}\n'.format(urlbase,url))
         
     
 class HTMLtoText_TestCase(LinkAnalytics_TestCaseBase):

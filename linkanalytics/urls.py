@@ -1,7 +1,8 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('linkanalytics',
-    (r'^create_target/$', 'views.createTrackedUrlTarget'),
+    (r'^compose_email/$', 'views.composeEmail'),
+    (r'^compose_email/(?P<emailid>\d+)/$', 'views.composeEmail'),
     (r'^create_trackee/$', 'views.createTrackee'),
     (r'^create_trackedurl/$', 'views.createTrackedUrl'),
     # The Regex for accessTrackedUrl: the ending '/' is optional.

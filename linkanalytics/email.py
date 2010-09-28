@@ -32,7 +32,24 @@ _BODYELEM = r'<'+_BODY+r'''>
         | </[Bb][Oo][Dd][Yy][^>]
     )*)
     </'''+_BODY+r'>'
-_HTMLDOC = r'(?P<prefix>.*)<[Hh][Tt][Mm][Ll]>\s*'+_HEADELEM+r'\s*'+_BODYELEM+r'\s*</[Hh][Tt][Mm][Ll]>'
+_PREFIX = r'''
+    (?P<prefix>(?:
+          [^<]
+        | <[^HhBb]
+        | <[Hh][^TtEe]
+        | <[Hh][Tt][^Mm] 
+        | <[Hh][Tt][Mm][^Ll]
+        | <[Hh][Tt][Mm][Ll][^>]
+        | <[Hh][Ee][^Aa] 
+        | <[Hh][Ee][Aa][^Dd]
+        | <[Hh][Ee][Aa][Dd][^>]
+        | <[Bb][^Oo]
+        | <[Bb][Oo][^Dd]
+        | <[Bb][Oo][Dd][^Yy]
+        | <[Bb][Oo][Dd][Yy][^>]
+    )*)
+    '''
+_HTMLDOC = _PREFIX+r'(?:<[Hh][Tt][Mm][Ll]>)?\s*(?:'+_HEADELEM+r')?\s*(?:'+_BODYELEM+r')?\s*(?:</[Hh][Tt][Mm][Ll]>)?'
 _re_htmldoc = re.compile(_HTMLDOC, re.VERBOSE)
         
 class HtmlDocument(object):
@@ -40,9 +57,18 @@ class HtmlDocument(object):
         m = _re_htmldoc.match(data)
         if not m:
             raise BadHtmlDocument('Cannot read html document.  Does it have <html>, <head>, and <body> tags?')
-        self.prefix = m.group('prefix')
-        self.head = m.group('headcontent')
-        self.body = m.group('bodycontent')
+        self.prefix = ''
+        self.head = m.group('headcontent')  if m.group('headcontent') else  ''
+        self.body = m.group('bodycontent')  if m.group('bodycontent') else  ''
+        if m.group('prefix') is not None:
+            # If no <head> or <body> tags are found, then use the entire 
+            # content as the body.  In such a case, the content shows up in 
+            # 'prefix'.
+            if m.group('headcontent') is None and m.group('bodycontent') is None:
+                self.body = m.group('prefix')
+            else:
+                self.prefix = m.group('prefix')
+        
     def assemble(self):
         return '{0}<html>\n<head>{1}</head>\n<body>{2}</body>\n</html>\n'.format(self.prefix, self.head, self.body)
 
@@ -74,6 +100,7 @@ class HtmlEmailContent(EmailContent):
            
            imgtype must be 'png' or 'gif'.
         """
+        assert imgtype in ('png','gif')
         imgtag = '''<img src="{{% track 'pixel' '{0}' %}}" height="1" width="1"/>'''.format(imgtype)
         self.html.body = imgtag + self.html.body
     def add_headcontent(self, content):
@@ -115,7 +142,7 @@ def compile_email(content, **kwargs):
     
     if content_type=='html':
         html = content
-        text = _html_to_text(html)
+        text = _html_to_text(HtmlDocument(html).assemble())
     elif content_type=='txt' or content_type=='text':
         raise RuntimeError('Compiling email from text is not yet implemented.')
     html = compile_html_email(html, html_header, html_footer, pixelimage_type)

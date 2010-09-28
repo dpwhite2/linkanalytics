@@ -1,5 +1,5 @@
 from django import forms
-from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance, Email #TrackedUrlTarget
+from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance, Email, DraftEmail #TrackedUrlTarget
 
 #==============================================================================#
 class TrackedUrlDefaultForm(forms.ModelForm):
@@ -32,10 +32,24 @@ class TrackeeForm(forms.ModelForm):
 # - Provide ability for link customization
 # - allow trackees to be added
 # - allow ability to create quick trackees
-class EmailForm(forms.ModelForm):
+class ComposeEmailForm(forms.ModelForm):
     class Meta:
-        model = Email
-
+        model = DraftEmail
+        exclude = ['sent',] #'pending_recipients']
+    def __init__(self, *args, **kwargs):
+        super(ComposeEmailForm,self).__init__(*args,**kwargs)
+        if self.instance.sent:
+            boundfields = self.visible_fields()
+            for bf in boundfields:
+                bf.field.widget.attrs['disabled'] = 'true'
+    def save(self, *args, **kwargs):
+        # disallow modifications if already sent
+        if not self.instance.sent:
+            return super(ComposeEmailForm,self).save(*args,**kwargs)
+        else:
+            return DraftEmail.objects.get(pk=self.instance.pk)
+        
+    
 
 
 
