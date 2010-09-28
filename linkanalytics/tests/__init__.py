@@ -55,7 +55,7 @@ class LinkAnalytics_TestCaseBase(TestCase):
         self.assertTrue(aa==bb, msg)
     
 class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
-    urls = 'linkanalytics.tests_urls'
+    urls = 'linkanalytics.tests.test_urls'
     
     # sets site.domain to 'testserver' which is what Django calls the testserver within URLs
     fixtures = ['sites.json']

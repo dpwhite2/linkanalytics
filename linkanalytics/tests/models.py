@@ -98,7 +98,7 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_DBTestCaseBase):
         # .first_access should reflect previous access, but recent_access 
         # should reflect the most recent access.
         self.assertEquals(i1.recent_access.date(), datetime.date.today())
-        self.assertEquals(i1.first_access, otherday)
+        self.assertEquals(i1.first_access.date(), otherday.date())
         self.assertEquals(i1.access_count, 2)
         self.assertEquals(i1.was_accessed(), True)
         
@@ -305,7 +305,7 @@ class Email_TestCase(LinkAnalytics_DBTestCaseBase):
         msg = django_email.outbox[0]
         content,mime = msg.alternatives[0]
         self.assertEquals(mime, 'text/html')
-        print '\n{0}\n'.format(content)
+        ##print '\n{0}\n'.format(content)
             
         e = xml.etree.ElementTree.fromstring(content)
         self.assertEquals(e.tag, 'html')

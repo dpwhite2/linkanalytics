@@ -19,7 +19,7 @@ urlpatterns = patterns('linkanalytics',
     # The Regex for accessTrackedUrl: the ending '/' is optional.
     (PREFIX+r'access/(?P<uuid>[a-f0-9]{32})/(?P<tailpath>(?:(?:/[-\w\d_.])|[-\w\d_.])+/?)$', 'views.accessTrackedUrl', {}, 'linkanalytics-accessview'),
     # Some urls defined for testing purposes only.
-    (PREFIX+r'testurl/$', 'tests_views.testview'),
+    (PREFIX+r'testurl/$', 'tests.test_views.testview'),
     )
     
-handler404 = 'linkanalytics.tests_views.on_page_not_found'
+handler404 = 'linkanalytics.tests.test_views.on_page_not_found'
