@@ -1,7 +1,9 @@
 from django.conf.urls.defaults import *
 
-# Uncomment the next two lines to enable the admin:
 from django.contrib import admin
+
+from django.conf import settings
+
 admin.autodiscover()
 
 urlpatterns = patterns('',
@@ -16,7 +18,7 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
     
     # The following static file views must only be enabled for the development server.
-    (r'^media/linkanalytics/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/home/dpwhite2/linkanalytics/linkanalytics/media'}),
+    #(r'^media/linkanalytics/(?P<path>.*)$', 'django.views.static.serve', {'document_root': '/home/dpwhite2/linkanalytics/linkanalytics/media'}),
 
     (r'^linkanalytics/', include('linkanalytics.urls')),
 

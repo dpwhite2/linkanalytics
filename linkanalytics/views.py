@@ -6,6 +6,8 @@ from django.core.urlresolvers import resolve, Resolver404
 
 from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance, Email, DraftEmail #, TrackedUrlTarget, TrackedUrlStats
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm, ComposeEmailForm #, TrackedUrlTargetForm
+from linkanalytics import app_settings
+
 
 import datetime
 import sys
@@ -21,15 +23,19 @@ def accessTrackedUrl(request, uuid, tailpath):
     if not qs.exists():
         raise Http404
     
-    # TODO: determine url 
+    ##print 'HTTP_HOST: {0}'.format(request.META['HTTP_HOST'])
+    ##print 'build_absolute_uri(): {0}'.format(request.build_absolute_uri())
+    ##url = '{0}{1}'.format(app_settings.URLBASE, request.path)
+    url = request.build_absolute_uri()
     
     try:
         viewfunc,args,kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
         response = viewfunc(request, uuid, *args, **kwargs)
         # record access only *after* viewfunc() returned
-        qs[0].on_access(success=True, url='')
+        qs[0].on_access(success=True, url=url)
     except Exception as e:
-        qs[0].on_access(success=False, url='')
+        qs[0].on_access(success=False, url=url)
+        raise
     
     return response
     

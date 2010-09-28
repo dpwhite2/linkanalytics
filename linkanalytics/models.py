@@ -153,7 +153,7 @@ class TrackedUrlAccess(models.Model):
     time = models.DateTimeField(null=True, blank=True)
     # should always be 0 or 1.  Zero indicates an error occurred while accessing the URL
     count = models.IntegerField(default=0, validators=[validate_onezero])
-    url = models.CharField(max_length=3000) # TODO: make this length a configurable setting?
+    url = models.CharField(max_length=3000, blank=True) # TODO: make this length a configurable setting?
 
 #==============================================================================#
 # Extras:
@@ -214,6 +214,10 @@ class Email(models.Model):
             t = TrackedUrlInstance(trackedurl=self.trackedurl, trackee=recipient)
             t.save()
             yield t.uuid
+            
+    def htmlmsg_brief(self):
+        return self.htmlmsg.splitlines()[0]
+    htmlmsg_brief.short_description = 'Message (HTML)'
 
 
 class DraftEmail(models.Model):
@@ -266,6 +270,10 @@ class DraftEmail(models.Model):
                              subject=self.subject, txtmsg=text, htmlmsg=html )
 
         return email_model
+        
+    def message_brief(self):
+        return self.message.splitlines()[0]
+    message_brief.short_description = 'Message'
 
 
 class EmailRecipients(models.Model):

@@ -1,9 +1,13 @@
+import os.path
+
 from django.shortcuts import render_to_response, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.sites.models import Site
 
 from django.template import TemplateDoesNotExist
+
+import app_settings
 
 
 #def view_unknown(request, uuid, targetname, arg):
@@ -51,4 +55,6 @@ def targetview_pixelgif(request, uuid):
     return HttpResponse('Target view: targetview_pixelgif().  Under Construction')
     
 def targetview_pixelpng(request, uuid):
-    return HttpResponse('Target view: targetview_pixelpng().  Under Construction')
+    fname = os.path.join(app_settings.PIXEL_IMGDIR,'blank.png')
+    with open(fname, 'rb') as f:
+        return HttpResponse(f.read(), mimetype='image/png')
