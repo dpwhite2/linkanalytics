@@ -1,6 +1,6 @@
 import unittest
 
-from . import base
+from linkanalytics.tests import base
 
 #==============================================================================#
 # Test modules...
@@ -9,9 +9,7 @@ from . import base
 ##from . import models
 ##from . import email
 from linkanalytics.tests import views, templatetags, models, email
-#from linkanalytics.tests import templatetags
-#from linkanalytics.tests import models
-#from linkanalytics.tests import email
+
 
 #==============================================================================#
 # List of all test modules containing tests.  
