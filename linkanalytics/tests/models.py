@@ -5,17 +5,20 @@ from django.db import IntegrityError
 from django.core import mail as django_email
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.tests import LinkAnalytics_TestCaseBase, LinkAnalytics_DBTestCaseBase
-from linkanalytics.tests import urlreverse_redirect_http
-from linkanalytics.tests import urlreverse_redirect_local
+#from linkanalytics.tests import LinkAnalytics_TestCaseBase, LinkAnalytics_DBTestCaseBase
+#from linkanalytics.tests import urlreverse_redirect_http
+#from linkanalytics.tests import urlreverse_redirect_local
 
 from linkanalytics.models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail,TrackedUrlAccess
 from linkanalytics import app_settings
 
+import helpers
+import base
+
 #==============================================================================#
 # Model tests:
         
-class TrackedUrlInstance_TestCase(LinkAnalytics_DBTestCaseBase):
+class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_unique_together(self):
         # Check that the same Trackee can not be added to a TrackedUrl more than once.
         u1 = TrackedUrl(name='Name1')
@@ -105,7 +108,7 @@ class TrackedUrlInstance_TestCase(LinkAnalytics_DBTestCaseBase):
         
 #==============================================================================#
         
-class Trackee_TestCase(LinkAnalytics_DBTestCaseBase):
+class Trackee_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_unique_username(self):
         # Check that Trackees cannot have duplicate names.
         t1 = Trackee(username='trackee1')
@@ -133,7 +136,7 @@ class Trackee_TestCase(LinkAnalytics_DBTestCaseBase):
         
 #==============================================================================#
 
-class TrackedUrl_TestCase(LinkAnalytics_DBTestCaseBase):
+class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_trackees(self):
         # Check the TrackedUrl.trackees attribute
         u1 = TrackedUrl(name='Name1')
@@ -225,7 +228,7 @@ class TrackedUrl_TestCase(LinkAnalytics_DBTestCaseBase):
         
 #==============================================================================#
 
-class Email_TestCase(LinkAnalytics_DBTestCaseBase):
+class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
     # This class tests both the Email and DraftEmail classes
     def test_compile_basic(self):
         de = DraftEmail(fromemail='', subject='Subject')
@@ -332,5 +335,6 @@ class Email_TestCase(LinkAnalytics_DBTestCaseBase):
     # check that EmailRecipients contains the new recipients of the email
         
         
+            
 #==============================================================================#
     

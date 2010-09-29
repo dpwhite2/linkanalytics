@@ -1,13 +1,16 @@
 
-from linkanalytics.tests import LinkAnalytics_TestCaseBase
-from linkanalytics.tests import urlreverse_redirect_http
-from linkanalytics.tests import urlreverse_redirect_local
+#from linkanalytics.tests import LinkAnalytics_TestCaseBase
+#from linkanalytics.tests import urlreverse_redirect_http
+#from linkanalytics.tests import urlreverse_redirect_local
 
 from linkanalytics import email as LAemail
 from linkanalytics.util import htmltotext
 
+import helpers
+import base
+
 #==============================================================================#
-class HtmlDocument_TestCase(LinkAnalytics_TestCaseBase):
+class HtmlDocument_TestCase(base.LinkAnalytics_TestCaseBase):
     def test_basic(self):
         html = "<html><head></head><body></body></html>"
         doc = LAemail.HtmlDocument(html)
@@ -85,7 +88,7 @@ class HtmlDocument_TestCase(LinkAnalytics_TestCaseBase):
 
 #==============================================================================#
 
-class CompileEmail_TestCase(LinkAnalytics_TestCaseBase):
+class CompileEmail_TestCase(base.LinkAnalytics_TestCaseBase):
     def test_basic(self):
         htmlsrc = "<html><head></head><body></body></html>"
         text,html = LAemail.compile_email(htmlsrc)
@@ -125,7 +128,7 @@ class CompileEmail_TestCase(LinkAnalytics_TestCaseBase):
         
 #==============================================================================#
         
-class InstantiateEmails_TestCase(LinkAnalytics_TestCaseBase):
+class InstantiateEmails_TestCase(base.LinkAnalytics_TestCaseBase):
     def test_basic(self):
         htmlsrc = "<html><head></head><body></body></html>"
         textsrc = ""
@@ -143,7 +146,7 @@ class InstantiateEmails_TestCase(LinkAnalytics_TestCaseBase):
         uuid = '0'*32
         it = LAemail.instantiate_emails(textsrc,htmlsrc,urlbase,(uuid,))
         text,html = it.next()
-        url = urlreverse_redirect_local(uuid=uuid, filepath='path/to/file.ext')
+        url = helpers.urlreverse_redirect_local(uuid=uuid, filepath='path/to/file.ext')
         ##url = 'http://example.com{0}/path/to/file.ext'.format(uuid)
         self.assertEquals(text, '{0}{1}'.format(urlbase,url))
         self.assertEquals(html, "<html><head></head><body>{0}{1}</body></html>".format(urlbase,url))
@@ -151,7 +154,7 @@ class InstantiateEmails_TestCase(LinkAnalytics_TestCaseBase):
         
 #==============================================================================#
 
-class HTMLtoText_TestCase(LinkAnalytics_TestCaseBase):
+class HTMLtoText_TestCase(base.LinkAnalytics_TestCaseBase):
     htmloutline = "<html><head></head><body>{0}</body></html>"
     
     def test_basic(self):
@@ -182,5 +185,5 @@ class HTMLtoText_TestCase(LinkAnalytics_TestCaseBase):
         text = str(htt)
         self.assertEquals(text, "One line.\nTwo lines.")
 
-        
+    
 #==============================================================================#
