@@ -91,12 +91,19 @@ def composeEmail(request, emailid=None):
         else:
             form = ComposeEmailForm()
 
-    return render_to_response('linkanalytics/compose_email.html',
+    return render_to_response('linkanalytics/email/compose.html',
                              {'form': form, 'emailid': emailid},
                               context_instance=RequestContext(request))
 
 
+def viewSentEmails(request):
+    return HttpResponse('View: viewSentEmails()...  Under Construction.')
 
+def viewDraftEmails(request):
+    return HttpResponse('View: viewDraftEmails()...  Under Construction.')
+
+def viewEmailContacts(request):
+    return HttpResponse('View: viewEmailContacts()...  Under Construction.')
 
 
 

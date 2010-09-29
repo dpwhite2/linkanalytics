@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-us" xml:lang="en-us" >
+
+<head>
+  <title>{% block title %}{% endblock %}</title>
+  <style type="text/css" media="screen">
+    th { text-align: right; vertical-align: top; }
+    #sidebar {
+      position: absolute;
+      left: 0; top: 0;
+      width: 13em;
+    }
+    #content {
+      position: absolute;
+      border-left: 1px solid gray;
+      padding-left: 1em;
+      left: 13em; top: 0;
+      width: auto;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="sidebar">
+  {% block sidebar %}
+    <h3>Menu:</h3>
+    <ul>
+      <li><a href="/linkanalytics/email/compose/">Compose</a></li>
+      <li><a href="/linkanalytics/email/viewsent/">Sent</a></li>
+      <li><a href="/linkanalytics/email/viewdrafts/">Drafts</a></li>
+      <li><a href="/linkanalytics/email/contacts/">Contacts</a></li>
+    </ul>
+  {% endblock %}
+  </div>
+  
+  <div id="content">
+  {% block content %}
+  {% endblock %}
+  </div>
+
+  
+</body>
+
+</html>

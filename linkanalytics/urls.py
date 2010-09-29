@@ -5,6 +5,10 @@ urlpatterns = patterns('linkanalytics',
     (r'^email/compose/$', 'views.composeEmail'),
     (r'^email/compose/(?P<emailid>\d+)/$', 'views.composeEmail'),
     
+    (r'^email/viewsent/$', 'views.viewSentEmails'),
+    (r'^email/viewdrafts/$', 'views.viewDraftEmails'),
+    (r'^email/contacts/$', 'views.viewEmailContacts'),
+    
     
     (r'^create_trackee/$', 'views.createTrackee'),
     (r'^create_trackedurl/$', 'views.createTrackedUrl'),
