@@ -6,9 +6,9 @@
   <h2>Compose Email</h2>
   {% if form %}
     {% if emailid %}
-      <form action="/linkanalytics/email/compose/{{ emailid }}/" method="post">
+      <form action="/linkanalytics/email/compose/{{ emailid }}/" method="post" class="stdform">
     {% else %}
-      <form action="/linkanalytics/email/compose/" method="post">
+      <form action="/linkanalytics/email/compose/" method="post" class="stdform">
     {% endif %}
       <table>
         {% csrf_token %}

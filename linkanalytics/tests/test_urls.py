@@ -13,12 +13,20 @@ from django.conf.urls.defaults import *
 PREFIX = r'^linkanalytics/'
 urlpatterns = patterns('linkanalytics',
 
-    (r'^email/compose/$', 'views.composeEmail'),
-    (r'^email/compose/(?P<emailid>\d+)/$', 'views.composeEmail'),
+    (PREFIX+r'email/$', 'views.viewEmail'),
+
+    (PREFIX+r'email/compose/$', 'views.composeEmail'),
+    (PREFIX+r'email/compose/(?P<emailid>\d+)/$', 'views.composeEmail'),
     
-    (r'^email/viewsent/$', 'views.viewSentEmails'),
-    (r'^email/viewdrafts/$', 'views.viewDraftEmails'),
-    (r'^email/contacts/$', 'views.viewEmailContacts'),
+    (PREFIX+r'email/viewsent/$', 'views.viewSentEmails'),
+    (PREFIX+r'email/viewdrafts/$', 'views.viewDraftEmails'),
+    (PREFIX+r'email/contacts/$', 'views.viewEmailContacts'),
+    
+    (PREFIX+r'email/(?P<emailid>\d+)/$', 'views.viewSingleSentEmail'),
+    (PREFIX+r'email/(?P<emailid>\d+)/read/$', 'views.viewEmailReadList'),
+    (PREFIX+r'email/(?P<emailid>\d+)/unread/$', 'views.viewEmailUnreadList'),
+    (PREFIX+r'email/(?P<emailid>\d+)/recipients/$', 'views.viewEmailRecipientsList'),
+    (PREFIX+r'email/(?P<emailid>\d+)/content/$', 'views.viewSentEmailContent'),
     
     (PREFIX+r'create_trackee/$', 'views.createTrackee'),
     (PREFIX+r'create_trackedurl/$', 'views.createTrackedUrl'),

@@ -69,6 +69,11 @@ def createTrackee(request):
                               context_instance=RequestContext(request))
 
 
+def viewEmail(request):
+    return render_to_response('linkanalytics/email/email.html', {},
+                              context_instance=RequestContext(request))
+    
+    
 def composeEmail(request, emailid=None):
     if request.method == 'POST': # If the form has been submitted...
         if emailid is not None: 
@@ -97,15 +102,33 @@ def composeEmail(request, emailid=None):
 
 
 def viewSentEmails(request):
-    return HttpResponse('View: viewSentEmails()...  Under Construction.')
+    return render_to_response('linkanalytics/email/sent.html',
+                             {'emails': Email.objects.all() },
+                              context_instance=RequestContext(request))
 
 def viewDraftEmails(request):
-    return HttpResponse('View: viewDraftEmails()...  Under Construction.')
+    return render_to_response('linkanalytics/email/drafts.html',
+                             {'drafts': DraftEmail.objects.filter(sent=False) },
+                              context_instance=RequestContext(request))
 
 def viewEmailContacts(request):
     return HttpResponse('View: viewEmailContacts()...  Under Construction.')
 
 
+def viewSingleSentEmail(request, emailid):
+    return HttpResponse('View: viewSingleSentEmail()...  Under Construction.')
+    
+def viewEmailReadList(request, emailid):
+    return HttpResponse('View: viewEmailReadList()...  Under Construction.')
+    
+def viewEmailUnreadList(request, emailid):
+    return HttpResponse('View: viewEmailUnreadList()...  Under Construction.')
+    
+def viewEmailRecipientsList(request, emailid):
+    return HttpResponse('View: viewEmailRecipientsList()...  Under Construction.')
+    
+def viewSentEmailContent(request, emailid):
+    return HttpResponse('View: viewSentEmailContent()...  Under Construction.')
 
 
 
