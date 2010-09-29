@@ -9,8 +9,6 @@ from . import templatetags
 from . import models
 from . import email
 
-_testmodules = [views,templatetags,models,email]
-
 #==============================================================================#
 # List of all test modules containing tests.  
 _testmodules = [views,templatetags,models,email]
@@ -23,4 +21,6 @@ def suite():
     return test_suite
 
 #==============================================================================#
+
+__all__ = ['suite', 'views', 'templatetags', 'models', 'email']
 
