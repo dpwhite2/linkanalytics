@@ -80,11 +80,11 @@ def composeEmail(request, emailid=None):
             # Process the data in form.cleaned_data
             draft = form.save()
             if 'do_save' in request.POST:
-                return HttpResponseRedirect('/linkanalytics/compose_email/{0}/'.format(draft.pk)) # Redirect after POST
+                return HttpResponseRedirect('/linkanalytics/email/compose/{0}/'.format(draft.pk)) # Redirect after POST
             elif 'do_send' in request.POST:
                 # TODO: create Email from DraftEmail, and send it
                 draft.send()
-                return HttpResponseRedirect('/linkanalytics/compose_email/{0}/'.format(draft.pk)) # Redirect after POST
+                return HttpResponseRedirect('/linkanalytics/email/compose/{0}/'.format(draft.pk)) # Redirect after POST
     else:
         if emailid is not None:
             form = ComposeEmailForm(instance=DraftEmail.objects.get(pk=emailid))

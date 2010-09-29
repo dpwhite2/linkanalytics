@@ -1,7 +1,7 @@
 import os.path
 
 from django.shortcuts import render_to_response, redirect
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext
 from django.contrib.sites.models import Site
 
@@ -58,3 +58,14 @@ def targetview_pixelpng(request, uuid):
     fname = os.path.join(app_settings.PIXEL_IMGDIR,'blank.png')
     with open(fname, 'rb') as f:
         return HttpResponse(f.read(), mimetype='image/png')
+        
+#def targetview_email(request, uuid):
+#    i = TrackedUrlInstance.objects.get(uuid=uuid)
+#    u = i.trackedurl
+#    qs = u.email_set.all()
+#    if not qs.exists():
+#        raise Http404
+#    eml = qs[0]
+    
+
+

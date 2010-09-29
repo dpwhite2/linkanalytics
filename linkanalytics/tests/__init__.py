@@ -251,7 +251,11 @@ class Track_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
         t = Template(templtxt)
         c = Context({})
         s = t.render(c)
-        self.assertEquals(s, '\n{% trackedurl linkid "gpx" %}\n{% trackedurl linkid "ppx" %}\n')
+        a = '{% if not ignore_pixelimages %}'
+        b = '{% endif %}'
+        gpx = '{% trackedurl linkid "gpx" %}'
+        ppx = '{% trackedurl linkid "ppx" %}'
+        self.assertEquals(s, '\n{a}{gpx}{b}\n{a}{ppx}{b}\n'.format(a=a,b=b,gpx=gpx,ppx=ppx))
         
 
 class TrackedUrl_TemplateTag_TestCase(LinkAnalytics_TestCaseBase):
