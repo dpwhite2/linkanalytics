@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from linkanalytics.models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail,TrackedUrlAccess
 
 # Disable Nose test autodiscovery for this module.
-#__test__ = False
+__test__ = False
 
 #==============================================================================#
 # Test cases are automatically added to the test suite if they derive from 
