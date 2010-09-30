@@ -188,8 +188,8 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         u1.save()
         
         # Both methods should be empty at first.
-        self.assertEquals(u1.url_instances().count(),0)
-        self.assertEquals(u1.url_instances_read().count(),0)
+        self.assertEquals(u1.url_instances().count(), 0)
+        self.assertEquals(u1.url_instances_read().count(), 0)
         
         t1 = Trackee(username='trackee1')
         t1.save()
@@ -197,8 +197,8 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         # Adding a Trackee should be reflected in url_instances(), but not 
         # url_instances_read()
-        self.assertEquals(u1.url_instances().count(),1)
-        self.assertEquals(u1.url_instances_read().count(),0)
+        self.assertEquals(u1.url_instances().count(), 1)
+        self.assertEquals(u1.url_instances_read().count(), 0)
         
         u2 = TrackedUrl(name='Name2')
         u2.save()
@@ -207,10 +207,10 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         # A Trackee may be associated with more than one TrackedUrl, but any 
         # such TrackedUrls should have separate url_instances.
-        self.assertEquals(u1.url_instances().count(),1)
-        self.assertEquals(u1.url_instances_read().count(),0)
-        self.assertEquals(u2.url_instances().count(),1)
-        self.assertEquals(u2.url_instances_read().count(),0)
+        self.assertEquals(u1.url_instances().count(), 1)
+        self.assertEquals(u1.url_instances_read().count(), 0)
+        self.assertEquals(u2.url_instances().count(), 1)
+        self.assertEquals(u2.url_instances_read().count(), 0)
         self.assertNotEquals(u1.url_instances()[0], u2.url_instances()[0])
         # The separate TrackedUrlInstances refer to the same Trackee.
         self.assertEquals(u1.url_instances()[0].trackee, 
@@ -221,14 +221,14 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         # Once accessed, url_instances() remains the same but 
         # url_instances_read() should indicate that the instance has now been 
         # read.
-        self.assertEquals(u1.url_instances().count(),1)
-        self.assertEquals(u1.url_instances_read().count(),1)
+        self.assertEquals(u1.url_instances().count(), 1)
+        self.assertEquals(u1.url_instances_read().count(), 1)
         
         i1.on_access(success=True, url='')
         
         # A second access should not affect the object counts.
-        self.assertEquals(u1.url_instances().count(),1)
-        self.assertEquals(u1.url_instances_read().count(),1)
+        self.assertEquals(u1.url_instances().count(), 1)
+        self.assertEquals(u1.url_instances_read().count(), 1)
         
         
 #==============================================================================#

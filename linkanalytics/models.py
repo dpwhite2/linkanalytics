@@ -15,6 +15,9 @@ from linkanalytics import app_settings
 #==============================================================================#
 
 def validate_onezero(value):
+    """The given value must be a 1 or a 0.  If it is not, Django's 
+       ValidationError is raised.
+    """
     if not (1<=value<=0):
         return ValidationError(u'%s is not 0 or 1.' % value)
 
@@ -37,6 +40,9 @@ def validate_onezero(value):
 
 
 class Trackee(models.Model):
+    """The 'actor' whose visits to particular URLs are tracked by 
+       Linkanalytics.  One Trackee may be tracked through any number of URLs. 
+    """
     username =          models.CharField(max_length=64, unique=True)
     first_name =        models.CharField(max_length=64, blank=True)
     last_name =         models.CharField(max_length=64, blank=True)
@@ -46,12 +52,15 @@ class Trackee(models.Model):
     is_django_user =    models.BooleanField(default=False)
 
     def __unicode__(self):
+        """Returns a unicode representation of a Trackee."""
         return u'%s'%self.username
 
     # pylint: disable=E1101
     def url_instances(self):
+        """A QuerySet of all TrackedUrlInstances which link to this Trackee."""
         return self.trackedurlinstance_set.all()
     def urls(self):
+        """A QuerySet of all TrackedUrls which link to this Trackee."""
         return self.trackedurl_set.all()
     # pylint: enable=E1101
     
@@ -84,18 +93,30 @@ def resolve_emails(s):
 
 
 class TrackedUrl(models.Model):
+    """A group of urls whose accesses are tracked by LinkAnalytics.  The 
+       TrackedUrl object is *not* the same as the physical URL which is 
+       accessed.  Instead, a unique id is associated with a 
+       (TrackedUrl, Trackee) pair--whenever that unique id is accessed, the 
+       Trackee is considered to have accessed the TrackedUrl.  This places no 
+       restrictions on where the Trackee is redirected to after the access.
+    """
     name =      models.CharField(max_length=256)
     comments =  models.TextField(blank=True)
     trackees =  models.ManyToManyField(Trackee, through='TrackedUrlInstance')
 
     def __unicode__(self):
+        """Returns a unicode representation of a TrackedUrl."""
         return u'%s'%self.name
 
     # pylint: disable-msg=E1101
     def url_instances(self):
+        """A QuerySet of all TrackedUrlInstances associated with this 
+           TrackedUrl"""
         return self.trackedurlinstance_set.all()
 
     def url_instances_read(self):
+        """A QuerySet of all TrackedUrlInstances associated with this 
+           TrackedUrl which have been accessed (or 'read')."""
         # instances containing TrackedUrlAccesses with a count value at least 1
         return self.trackedurlinstance_set.annotate(
                         num_accesses=models.Count('trackedurlaccess__count')
@@ -103,16 +124,21 @@ class TrackedUrl(models.Model):
     # pylint: enable-msg=E1101
 
     def add_trackee(self, trackee):
+        """Creates a TrackedUrlInstance associating the given Trackee with this 
+           TrackedUrl.  The TrackedUrlInstance is saved and returned."""
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
         i.save()
         return i
 
 
 def _create_uuid():
+    """Returns a 32-character string containing a randomly-generated UUID."""
     return uuid.uuid4().hex
 
 
 class TrackedUrlInstance(models.Model):
+    """The class which links a Trackee and a TrackedUrl.  It is through this 
+       class (and owned objects) that access statistics are kept."""
     trackedurl =    models.ForeignKey(TrackedUrl)
     trackee =       models.ForeignKey(Trackee)
     uuid =          models.CharField(max_length=32, editable=False, 
@@ -123,13 +149,19 @@ class TrackedUrlInstance(models.Model):
         unique_together = (("trackedurl", "trackee", ),)
 
     def __unicode__(self):
+        """Returns a unicode representation of a TrackedUrlInstance."""
         return u'%s, %s'%(self.trackedurl, self.trackee)
 
     def was_accessed(self):
+        """Returns True if this TrackedUrlInstance has been accessed; returns 
+           False otherwise."""
         return self.access_count > 0
 
     def on_access(self, success, url):
-        """success: boolean that indicates if URL access occurred with no errors
+        """Call to indicate that the TrackedUrlInstance has been accessed.  
+           This is usually called from within a view function.
+            
+           success: boolean that indicates if URL access occurred with no errors
            url: the url used (*not* the url redirected to)
         """
         count = 0
@@ -159,13 +191,15 @@ class TrackedUrlInstance(models.Model):
 
 
 class TrackedUrlAccess(models.Model):
-    instance = models.ForeignKey(TrackedUrlInstance)
-    time = models.DateTimeField(null=True, blank=True)
+    """Records a single access (possibly unsuccessful) of the associated 
+       TrackedUrlInstance."""
+    instance =  models.ForeignKey(TrackedUrlInstance)
+    time =      models.DateTimeField(null=True, blank=True)
     # Should always be 0 or 1.  Zero indicates an error occurred while 
     # accessing the URL
-    count = models.IntegerField(default=0, validators=[validate_onezero])
+    count =     models.IntegerField(default=0, validators=[validate_onezero])
     # TODO: make this length a configurable setting?
-    url = models.CharField(max_length=3000, blank=True) 
+    url =   models.CharField(max_length=3000, blank=True) 
 
 #==============================================================================#
 # Extras:
@@ -174,11 +208,15 @@ class EmailAlreadySentError(Exception):
     """An attempt was made to send a DraftEmail object that was already sent."""
 
 def _create_trackedurl_for_email():
+    """Creates a TrackedUrl to be used with a new email message."""
     u = TrackedUrl(name='_email_{0}'.format(_create_uuid()))
     u.save()
     return u
 
 class Email(models.Model):
+    """Represents a *sent* email message.  This object may not be edited, 
+       except to add more recipients.  Its message, subject, from-email, 
+       etc, however, may not be modified."""
     fromemail =     models.EmailField(blank=True)
     trackedurl =    models.ForeignKey(TrackedUrl, editable=False)
     subject =       models.CharField(max_length=256, editable=False)
@@ -186,6 +224,12 @@ class Email(models.Model):
     htmlmsg =       models.TextField(editable=False)
 
     def send(self, recipients):
+        """Attempt to send the email.  This may be called on emails that have 
+           already been sent.
+        
+           recipients: A sequence of Trackee objects who will be sent this 
+                       message.
+        """
         if not recipients or not recipients.exists():
             return
         urlbase = app_settings.URLBASE
@@ -229,6 +273,8 @@ class Email(models.Model):
         
 
     def _create_multipart_email(self, text, html, recipient, connection=None):
+        """Creates an email addressed to the given recipient and containing 
+           both the given html and text content."""
         msg = mail.EmailMultiAlternatives(
                                 self.subject, text, self.fromemail,
                                 [recipient.emailaddress],
@@ -238,14 +284,18 @@ class Email(models.Model):
         return msg
             
     def htmlmsg_brief(self):
+        """A brief representation of the email message.  Currently, this only 
+           returns the first line."""
         return self.htmlmsg.splitlines()[0]
     htmlmsg_brief.short_description = 'Message (HTML)'
 
 
 class DraftEmail(models.Model):
-    # An Email object is created when the EmailDraft is sent.  At that point, 
-    # the EmailDraft may not be modified.
-    # Also when sent, pending_recipients is flushed to Email.recipients
+    """An email which has *not* yet been sent.  A DraftEmail object is 
+       converted to an Email object when it is sent.  After that, the 
+       DraftEmail object may not be modified, and its pending_recipients become 
+       the first recipients of the Email message."""
+       
     pending_recipients = models.ManyToManyField(Trackee, blank=True)
     fromemail =     models.EmailField(blank=True)
     subject =       models.CharField(max_length=256, blank=True)
@@ -263,6 +313,7 @@ class DraftEmail(models.Model):
                                    match=r'.*\.txt',max_length=255,blank=True)
 
     def __unicode__(self):
+        """Returns a unicode representation of a DraftEmail."""
         n = self.pending_recipients.count()
         lim = min(n,5)
         rec = u','.join(unicode(a) for a in self.pending_recipients.all()[:lim])
@@ -319,11 +370,18 @@ class DraftEmail(models.Model):
         return email_model
         
     def message_brief(self):
+        """A brief representation of the email message.  Currently, this only 
+           returns the first line."""
         return self.message.splitlines()[0]
     message_brief.short_description = 'Message'
 
 
 class EmailRecipients(models.Model):
+    """A collection of Trackees to whom an Email has been sent.  Whenever an 
+       Email is sent, its recipients are added to a new EmailRecipients object.  
+       Therefore, a single Email may be associated with more than one 
+       EmailRecipients object.
+    """
     email =         models.ForeignKey(Email)
     recipients =    models.ManyToManyField(Trackee)
     datesent =      models.DateField()
