@@ -5,11 +5,8 @@ from django.db import IntegrityError
 from django.core import mail as django_email
 from django.core.urlresolvers import reverse as urlreverse
 
-#from linkanalytics.tests import LinkAnalytics_TestCaseBase, LinkAnalytics_DBTestCaseBase
-#from linkanalytics.tests import urlreverse_redirect_http
-#from linkanalytics.tests import urlreverse_redirect_local
-
-from linkanalytics.models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail,TrackedUrlAccess
+from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee, Email
+from linkanalytics.models import DraftEmail, TrackedUrlAccess
 from linkanalytics import app_settings
 
 import helpers
@@ -20,18 +17,21 @@ import base
         
 class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_unique_together(self):
-        # Check that the same Trackee can not be added to a TrackedUrl more than once.
+        # Check that the same Trackee can not be added to a TrackedUrl more 
+        # than once.
         u1 = TrackedUrl(name='Name1')
         u1.save()
         t1 = Trackee(username='trackee1')
         t1.save()
         
         i1 = u1.add_trackee(t1)
-        # Should not be able to save another item with same TrackedUrl and Trackee.
-        self.assertRaises(IntegrityError, u1.add_trackee, t1)  # t1 is passed to add_trackee
+        # Should not be able to save item with same TrackedUrl and Trackee.
+        self.assertRaises(IntegrityError, u1.add_trackee, t1)  # t1 is passed
+                                                               # to add_trackee
         
     def test_basic(self):
-        # Check the attributes on a TrackedUrlInstance that has not been accessed.
+        # Check the attributes on a TrackedUrlInstance that has not been 
+        # accessed.
         u = TrackedUrl(name='Name')
         u.save()
         t = Trackee(username='trackee0')
@@ -62,7 +62,8 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         
     def test_single_access(self):
-        # Check the attributes on a TrackedUrlInstance that has been accessed once.
+        # Check the attributes on a TrackedUrlInstance that has been accessed 
+        # once.
         u1 = TrackedUrl(name='Name1')
         u1.save()
         t1 = Trackee(username='trackee1')
@@ -152,7 +153,8 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         i1 = u1.add_trackee(t1)
         
-        # ...But once added, the Trackee should be found in the trackees attribute.
+        # ...But once added, the Trackee should be found in the trackees 
+        # attribute.
         self.assertEquals(u1.trackees.exists(), True)
         self.assertEquals(u1.trackees.count(), 1)
         self.assertEquals(u1.trackees.all()[0], t1)
@@ -180,7 +182,8 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         
     def test_urlInstances(self):
-        # Check the methods: TrackedUrl.url_instances() and TrackedUrl.url_instances_read()
+        # Check the methods: TrackedUrl.url_instances() and 
+        #                    TrackedUrl.url_instances_read()
         u1 = TrackedUrl(name='Name1')
         u1.save()
         
@@ -192,7 +195,8 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t1.save()
         i1 = u1.add_trackee(t1)
         
-        # Adding a Trackee should be reflected in url_instances(), but not url_instances_read()
+        # Adding a Trackee should be reflected in url_instances(), but not 
+        # url_instances_read()
         self.assertEquals(u1.url_instances().count(),1)
         self.assertEquals(u1.url_instances_read().count(),0)
         
@@ -209,7 +213,8 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(u2.url_instances_read().count(),0)
         self.assertNotEquals(u1.url_instances()[0], u2.url_instances()[0])
         # The separate TrackedUrlInstances refer to the same Trackee.
-        self.assertEquals(u1.url_instances()[0].trackee, u2.url_instances()[0].trackee)
+        self.assertEquals(u1.url_instances()[0].trackee, 
+                          u2.url_instances()[0].trackee)
         
         i1.on_access(success=True, url='')
         
@@ -284,7 +289,8 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         self.assertEquals(len(django_email.outbox), 1)
         self.assertEquals(django_email.outbox[0].subject, 'Subject')
-        self.assertEquals(django_email.outbox[0].recipients(), ['user@example.com'])
+        self.assertEquals(django_email.outbox[0].recipients(), 
+                          ['user@example.com'])
         
     def test_send_pixelimage(self):
         """Sends an email containing a pixelimage."""
@@ -322,14 +328,17 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         src = img.get('src', default=None)
         self.assertNotEquals(src, None)
         
-        urltail = urlreverse('targetview-pixelpng', urlconf='linkanalytics.targeturls')
+        urltail = urlreverse( 'targetview-pixelpng', 
+                              urlconf='linkanalytics.targeturls')
         urltail = urltail[1:] # remove leading '/'
-        url = urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+        url = urlreverse( 'linkanalytics-accessview', 
+                          kwargs={'uuid': uuid, 'tailpath':urltail})
         
         self.assertEquals(src, '{0}{1}'.format(app_settings.URLBASE, url))
         
     # check that DraftEmails cannot be sent more than once
-    # check that the same email cannot be sent to the same recipient more than once
+    # check that the same email cannot be sent to the same recipient more than 
+    #   once
     # check that emails actually get sent
     # check that each recipient has a different uuid
     # check that EmailRecipients contains the new recipients of the email

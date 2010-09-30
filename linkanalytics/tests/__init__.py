@@ -1,6 +1,7 @@
 import unittest
 
 from linkanalytics.tests import base
+from linkanalytics.tests import helpers
 
 #==============================================================================#
 # Test modules...
@@ -27,5 +28,5 @@ def suite():
 
 #==============================================================================#
 
-__all__ = ['suite', 'views', 'templatetags', 'models', 'email']
+#__all__ = ['suite', 'views', 'templatetags', 'models', 'email', 'base', 'helpers']
 

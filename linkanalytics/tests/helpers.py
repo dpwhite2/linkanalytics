@@ -16,19 +16,28 @@ def _put_htmldoc_newlines(data):
     return data
     
 def urlreverse_redirect_http(uuid, domain, filepath=''):
-    urltail = urlreverse('redirect-http', urlconf='linkanalytics.targeturls', kwargs={'domain':domain,'filepath':filepath})
+    urltail = urlreverse('redirect-http', 
+                         urlconf='linkanalytics.targeturls', 
+                         kwargs={'domain':domain,'filepath':filepath})
     urltail = urltail[1:] # remove leading '/'
-    return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+    return urlreverse('linkanalytics-accessview', 
+                      kwargs={'uuid': uuid, 'tailpath':urltail})
     
 def urlreverse_redirect_local(uuid, filepath):
-    urltail = urlreverse('redirect-local', urlconf='linkanalytics.targeturls', kwargs={'filepath':filepath})
+    urltail = urlreverse('redirect-local', 
+                         urlconf='linkanalytics.targeturls', 
+                         kwargs={'filepath':filepath})
     urltail = urltail[1:] # remove leading '/'
-    return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+    return urlreverse('linkanalytics-accessview', 
+                      kwargs={'uuid': uuid, 'tailpath':urltail})
     
 def urlreverse_targetview_html(uuid, filepath):
-    urltail = urlreverse('targetview-html', urlconf='linkanalytics.targeturls', kwargs={'filepath':filepath})
+    urltail = urlreverse('targetview-html', 
+                         urlconf='linkanalytics.targeturls', 
+                         kwargs={'filepath':filepath})
     urltail = urltail[1:] # remove leading '/'
-    return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+    return urlreverse('linkanalytics-accessview', 
+                      kwargs={'uuid': uuid, 'tailpath':urltail})
     
 #==============================================================================#
 

@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee, TrackedUrlAccess
-from linkanalytics.models import Email, DraftEmail
+from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
+from linkanalytics.models import Email, DraftEmail, TrackedUrlAccess
 
 def trackees_count(obj):
     return '%d'%obj.trackees.count()
@@ -17,7 +17,8 @@ class TrackedUrlAdmin(admin.ModelAdmin):
     
 
 class TrackeeAdmin(admin.ModelAdmin):
-    list_display = ('username','emailaddress','first_name','last_name','is_django_user',)
+    list_display = ('username', 'emailaddress', 'first_name', 'last_name', 
+                    'is_django_user', )
     
 
 
@@ -25,14 +26,15 @@ class TrackedUrlAccessInline(admin.TabularInline):
     model = TrackedUrlAccess
 
 class TrackedUrlInstanceAdmin(admin.ModelAdmin):
-    list_display = ('trackedurl','trackee','uuid','notified',)
+    list_display = ('trackedurl', 'trackee', 'uuid', 'notified', )
     inlines = [ TrackedUrlAccessInline, ]
     
 class EmailAdmin(admin.ModelAdmin):
-    list_display = ('subject','trackedurl','htmlmsg_brief',)
+    list_display = ('subject', 'trackedurl', 'htmlmsg_brief', )
     
 class DraftEmailAdmin(admin.ModelAdmin):
-    list_display = ('subject','message_brief','sent','pixelimage','htmlheader','htmlfooter','textheader','textfooter')
+    list_display = ('subject', 'message_brief', 'sent', 'pixelimage', 
+                    'htmlheader', 'htmlfooter', 'textheader', 'textfooter')
 
 admin.site.register(TrackedUrl, TrackedUrlAdmin)
 admin.site.register(TrackedUrlInstance, TrackedUrlInstanceAdmin)

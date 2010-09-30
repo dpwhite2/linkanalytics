@@ -5,7 +5,8 @@ import datetime
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from linkanalytics.models import TrackedUrl,TrackedUrlInstance,Trackee,Email,DraftEmail,TrackedUrlAccess
+from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
+from linkanalytics.models import Email, DraftEmail, TrackedUrlAccess
 
 # Disable Nose test autodiscovery for this module.
 __test__ = False
@@ -47,7 +48,8 @@ class LinkAnalytics_TestCaseBase(TestCase):
 class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
     urls = 'linkanalytics.tests.test_urls'
     
-    # sets site.domain to 'testserver' which is what Django calls the testserver within URLs
+    # sets site.domain to 'testserver' which is what Django calls the 
+    # testserver within URLs
     fixtures = ['sites.json']
     
     def scoped_login(self, username, password):
@@ -59,7 +61,9 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         for user in self.users:
             user.delete()
         self.users = [
-                User.objects.create_user(username="user%d"%i,email="user%d@example.com"%i,password="password") 
+                User.objects.create_user(username="user%d"%i,
+                                         email="user%d@example.com"%i,
+                                         password="password") 
                 for i in range(n)
             ]
     def tearDown(self):

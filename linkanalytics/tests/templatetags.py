@@ -30,7 +30,8 @@ class Track_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         t = Template(templtxt)
         c = Context({})
         s = t.render(c)
-        self.assertEquals(s, '\n{% trackedurl linkid "http/www.domain.org/path/to/file.html" %}\n')
+        url = "http/www.domain.org/path/to/file.html"
+        self.assertEquals(s, '\n{{% trackedurl linkid "{0}" %}}\n'.format(url))
         
     def test_pixel(self):
         templtxt = """\
@@ -46,7 +47,8 @@ class Track_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         b = '{% endif %}'
         gpx = '{% trackedurl linkid "gpx" %}'
         ppx = '{% trackedurl linkid "ppx" %}'
-        self.assertEquals(s, '\n{a}{gpx}{b}\n{a}{ppx}{b}\n'.format(a=a,b=b,gpx=gpx,ppx=ppx))
+        exp = '\n{a}{gpx}{b}\n{a}{ppx}{b}\n'.format(a=a, b=b, gpx=gpx, ppx=ppx)
+        self.assertEquals(s, exp)
         
 
 class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
@@ -61,7 +63,8 @@ class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         urlbase = 'http://example.com'
         c = Context({'linkid':uuid, 'urlbase':urlbase})
         s = t.render(c)
-        url = helpers.urlreverse_redirect_local(uuid=uuid, filepath='path/to/file.ext')
+        url = helpers.urlreverse_redirect_local(uuid=uuid, 
+                                                filepath='path/to/file.ext')
         self.assertEquals(s, '\n{0}{1}\n'.format(urlbase,url))
         
     def test_url(self):
@@ -75,7 +78,9 @@ class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         urlbase = 'http://example.com'
         c = Context({'linkid':uuid, 'urlbase':urlbase})
         s = t.render(c)
-        url = helpers.urlreverse_redirect_http(uuid=uuid, domain='www.example.com', filepath='path/file.html')
+        url = helpers.urlreverse_redirect_http(uuid=uuid, 
+                                               domain='www.example.com', 
+                                               filepath='path/file.html')
         self.assertEquals(s, '\n{0}{1}\n'.format(urlbase,url))
         
     

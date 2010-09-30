@@ -1,22 +1,16 @@
 from django import forms
-from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance, Email, DraftEmail #TrackedUrlTarget
+from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance
+from linkanalytics.models import Email, DraftEmail
 
 #==============================================================================#
 class TrackedUrlDefaultForm(forms.ModelForm):
-    # - link Trackees and targets... for each target, create a tracked url instance for each user
     # - allow trackees to be added
     # - allow targets to be added or created
-    # - create quick trackee from an email address (but first check if email is present on an existing trackee)
+    # - create quick trackee from an email address 
+    #       (but first check if email is present on an existing trackee)
     class Meta:
         model = TrackedUrl
         
-        
-        
-##class TrackedUrlForm(forms.Form):
-##    name = forms.CharField()
-##    comments = forms.CharField(widget=forms.Textarea)
-##    #job = forms.ModelChoiceField() # empty queryset, overridden in ctor   
-
 #==============================================================================#
 class TrackeeForm(forms.ModelForm):
     class Meta:

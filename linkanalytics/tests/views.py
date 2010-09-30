@@ -36,12 +36,14 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         #   URLINSTANCE  TARGETVIEW
         #   URLINSTANCE = /linkanalytics/access/{uuid}
         #   TARGETVIEW =  /r/linkanalytics/testurl/
-        url = helpers.urlreverse_redirect_local(i.uuid, filepath='linkanalytics/testurl/')
+        url = helpers.urlreverse_redirect_local(i.uuid, 
+                                              filepath='linkanalytics/testurl/')
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
         
         self.assertEquals(len(chain),1)
-        self.assertEquals(chain[0],(u'http://testserver/linkanalytics/testurl/',302))
+        self.assertEquals(chain[0],
+                          (u'http://testserver/linkanalytics/testurl/',302))
         
         # reload the instance so its fields represent its current state
         i = TrackedUrlInstance.objects.filter(uuid=i.uuid)[0]
@@ -59,7 +61,8 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         #   URLINSTANCE  TARGETVIEW
         #   URLINSTANCE = /linkanalytics/access/{uuid}
         #   TARGETVIEW =  /http/www.google.com/       
-        url = helpers.urlreverse_redirect_http(uuid=i.uuid, domain='www.google.com')
+        url = helpers.urlreverse_redirect_http(uuid=i.uuid, 
+                                               domain='www.google.com')
         
         # Limitation of Django testing framework: non-local urls will not be 
         # accessed.  So, in this case, www.google.com is NOT actually accessed.  

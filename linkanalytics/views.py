@@ -4,8 +4,10 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import resolve, Resolver404
 
-from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance, Email, DraftEmail #, TrackedUrlTarget, TrackedUrlStats
-from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm, ComposeEmailForm #, TrackedUrlTargetForm
+from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
+from linkanalytics.models import Email, DraftEmail
+from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
+from linkanalytics.forms import ComposeEmailForm
 from linkanalytics import app_settings
 
 
@@ -39,11 +41,11 @@ def accessTrackedUrl(request, uuid, tailpath):
 
 def createTrackedUrl(request):
     if request.method == 'POST': # If the form has been submitted...
-        form = TrackedUrlDefaultForm(request.POST, instance=TrackedUrl()) # A form bound to the POST data
+        form = TrackedUrlDefaultForm(request.POST, instance=TrackedUrl())
         if form.is_valid(): # All validation rules pass
             # Process the data in form.cleaned_data
             form.save()
-            return HttpResponseRedirect('/linkanalytics/create_trackedurl/') # Redirect after POST
+            return HttpResponseRedirect('/linkanalytics/create_trackedurl/')
     else:
         form = TrackedUrlDefaultForm() # An unbound form
 
@@ -53,11 +55,11 @@ def createTrackedUrl(request):
     
 def createTrackee(request):
     if request.method == 'POST': # If the form has been submitted...
-        form = TrackeeForm(request.POST, instance=Trackee()) # A form bound to the POST data
+        form = TrackeeForm(request.POST, instance=Trackee())
         if form.is_valid(): # All validation rules pass
             # Process the data in form.cleaned_data
             form.save()
-            return HttpResponseRedirect('/linkanalytics/create_trackee/') # Redirect after POST
+            return HttpResponseRedirect('/linkanalytics/create_trackee/')
     else:
         form = TrackeeForm() # An unbound form
 
@@ -77,16 +79,18 @@ def composeEmail(request, emailid=None):
             instance = DraftEmail.objects.get(pk=emailid)
         else:
             instance = DraftEmail()
-        form = ComposeEmailForm(request.POST, instance=instance) # A form bound to the POST data
+        form = ComposeEmailForm(request.POST, instance=instance)
         if form.is_valid(): # All validation rules pass
             # Process the data in form.cleaned_data
             draft = form.save()
             if 'do_save' in request.POST:
-                return HttpResponseRedirect('/linkanalytics/email/compose/{0}/'.format(draft.pk)) # Redirect after POST
+                absurl = '/linkanalytics/email/compose/{0}/'.format(draft.pk)
+                return HttpResponseRedirect(absurl)
             elif 'do_send' in request.POST:
                 # TODO: create Email from DraftEmail, and send it
                 draft.send()
-                return HttpResponseRedirect('/linkanalytics/email/compose/{0}/'.format(draft.pk)) # Redirect after POST
+                absurl = '/linkanalytics/email/compose/{0}/'.format(draft.pk)
+                return HttpResponseRedirect(absurl)
     else:
         if emailid is not None:
             form = ComposeEmailForm(instance=DraftEmail.objects.get(pk=emailid))
@@ -109,11 +113,11 @@ def viewDraftEmails(request):
                               context_instance=RequestContext(request))
 
 def viewEmailContacts(request):
-    return HttpResponse('View: viewEmailContacts()...  Under Construction.')
+    return HttpResponse('View: Under Construction.')
 
 
 def viewSingleSentEmail(request, emailid):
-    return HttpResponse('View: viewSingleSentEmail()...  Under Construction.')
+    return HttpResponse('View: Under Construction.')
     
 def viewEmailReadList(request, emailid):
     eml = Email.objects.get(pk=emailid)
@@ -132,13 +136,13 @@ def viewEmailReadList(request, emailid):
                               context_instance=RequestContext(request))
     
 def viewEmailUnreadList(request, emailid):
-    return HttpResponse('View: viewEmailUnreadList()...  Under Construction.')
+    return HttpResponse('View: Under Construction.')
     
 def viewEmailRecipientsList(request, emailid):
-    return HttpResponse('View: viewEmailRecipientsList()...  Under Construction.')
+    return HttpResponse('View: Under Construction.')
     
 def viewSentEmailContent(request, emailid):
-    return HttpResponse('View: viewSentEmailContent()...  Under Construction.')
+    return HttpResponse('View: Under Construction.')
 
 
 

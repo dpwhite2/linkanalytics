@@ -24,9 +24,11 @@ def targetview_html(request, uuid, filepath=None):
                               context_instance=RequestContext(request))
 
 def targetview_redirect(request, uuid, scheme=None, domain=None, filepath=None):
-    """Redirects to another URL.  Unlike other targetviews, this function uses HttpResponseRedirect.
+    """Redirects to another URL.  Unlike other targetviews, this function uses 
+       HttpResponseRedirect.
     
-       scheme:      The URI scheme (e.g. http, https).  If not provided, http is assumed.
+       scheme:      The URI scheme (e.g. http, https).  If not provided, http 
+                    is assumed.
        domain:      The URL domain name, including the optional port.
        filepath:    Everything in the URL that follows the domain.
        
@@ -36,7 +38,8 @@ def targetview_redirect(request, uuid, scheme=None, domain=None, filepath=None):
     """
     
     if (not domain) and (not filepath):
-        raise TypeError('Either "domain" or "filepath" (or both) must be provided.')
+        msg = 'Either "domain" or "filepath" (or both) must be provided.'
+        raise TypeError(msg)
     
     if not domain:
         # also ignore scheme
@@ -52,20 +55,14 @@ def targetview_redirect(request, uuid, scheme=None, domain=None, filepath=None):
     return response
 
 def targetview_pixelgif(request, uuid):
-    return HttpResponse('Target view: targetview_pixelgif().  Under Construction')
+    msg = 'Target view: targetview_pixelgif().  Under Construction'
+    return HttpResponse(msg)
     
 def targetview_pixelpng(request, uuid):
     fname = os.path.join(app_settings.PIXEL_IMGDIR,'blank.png')
     with open(fname, 'rb') as f:
         return HttpResponse(f.read(), mimetype='image/png')
         
-#def targetview_email(request, uuid):
-#    i = TrackedUrlInstance.objects.get(uuid=uuid)
-#    u = i.trackedurl
-#    qs = u.email_set.all()
-#    if not qs.exists():
-#        raise Http404
-#    eml = qs[0]
     
 
 

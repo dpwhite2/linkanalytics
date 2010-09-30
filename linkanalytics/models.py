@@ -23,8 +23,8 @@ def validate_onezero(value):
 #
 # A *TrackedUrl* represents a url whose accesses are tracked.
 
-# Each TrackedUrl is associated with zero or more *TrackedUrlInstances*.  Each of
-# those instances tracks when a single user accesses a single url.  A
+# Each TrackedUrl is associated with zero or more *TrackedUrlInstances*.  Each 
+# of those instances tracks when a single user accesses a single url.  A
 # TrackedUrlInstance is associated with exactly one TrackedUrl and one user.
 
 # A *Trackee* is the actor whose url accesses are tracked.  Trackees and
@@ -75,7 +75,8 @@ _re_email = re.compile(_EMAIL)
 _re_emailsplit = re.compile(r'[\s,]+')
 
 def resolve_emails(s):
-    """Convert a string of emails to a list of trackees and a list of unrecognized emails."""
+    """Convert a string of emails to a list of trackees and a list of 
+       unrecognized emails."""
     parts = _re_emailsplit.split(s)
     for em in parts:
         m = _re_email.match(em)
@@ -96,7 +97,9 @@ class TrackedUrl(models.Model):
 
     def url_instances_read(self):
         # instances containing TrackedUrlAccesses with a count value at least 1
-        return self.trackedurlinstance_set.annotate(num_accesses=models.Count('trackedurlaccess__count')).filter(num_accesses__gt=0)
+        return self.trackedurlinstance_set.annotate(
+                        num_accesses=models.Count('trackedurlaccess__count')
+                    ).filter(num_accesses__gt=0)
     # pylint: enable-msg=E1101
 
     def add_trackee(self, trackee):
@@ -112,7 +115,8 @@ def _create_uuid():
 class TrackedUrlInstance(models.Model):
     trackedurl =    models.ForeignKey(TrackedUrl)
     trackee =       models.ForeignKey(Trackee)
-    uuid =          models.CharField(max_length=32, editable=False, default=_create_uuid, unique=True)
+    uuid =          models.CharField(max_length=32, editable=False, 
+                                     default=_create_uuid, unique=True)
     notified =      models.DateField(null=True, blank=True)
 
     class Meta:
@@ -144,7 +148,8 @@ class TrackedUrlInstance(models.Model):
         ag = self.trackedurlaccess_set.aggregate(models.Max('time'))
         return ag['time__max']
     def _access_count(self):
-        r = self.trackedurlaccess_set.aggregate(models.Sum('count'))['count__sum']
+        tset = self.trackedurlaccess_set
+        r = tset.aggregate(models.Sum('count'))['count__sum']
         return r  if r else  0  # handles case where r is None
     # pylint: enable-msg=E1101
     
@@ -156,9 +161,11 @@ class TrackedUrlInstance(models.Model):
 class TrackedUrlAccess(models.Model):
     instance = models.ForeignKey(TrackedUrlInstance)
     time = models.DateTimeField(null=True, blank=True)
-    # should always be 0 or 1.  Zero indicates an error occurred while accessing the URL
+    # Should always be 0 or 1.  Zero indicates an error occurred while 
+    # accessing the URL
     count = models.IntegerField(default=0, validators=[validate_onezero])
-    url = models.CharField(max_length=3000, blank=True) # TODO: make this length a configurable setting?
+    # TODO: make this length a configurable setting?
+    url = models.CharField(max_length=3000, blank=True) 
 
 #==============================================================================#
 # Extras:
@@ -182,7 +189,8 @@ class Email(models.Model):
         if not recipients or not recipients.exists():
             return
         urlbase = app_settings.URLBASE
-        einstantiator = la_email.email_instantiator(self.txtmsg, self.htmlmsg, urlbase)
+        einstantiator = la_email.email_instantiator(self.txtmsg, self.htmlmsg, 
+                                                    urlbase)
         
         # Note: msgs = list of django.core.mail.EmailMultiAlternatives
         msgs = []
@@ -190,7 +198,8 @@ class Email(models.Model):
         
         # Build the emails
         for recipient in recipients:
-            i = TrackedUrlInstance(trackedurl=self.trackedurl, trackee=recipient)
+            i = TrackedUrlInstance(trackedurl=self.trackedurl, 
+                                   trackee=recipient)
             i.save()
             text,html = einstantiator(i.uuid)
             
@@ -234,7 +243,8 @@ class Email(models.Model):
 
 
 class DraftEmail(models.Model):
-    # An Email object is created when the EmailDraft is sent.  At that point, the EmailDraft may not be modified.
+    # An Email object is created when the EmailDraft is sent.  At that point, 
+    # the EmailDraft may not be modified.
     # Also when sent, pending_recipients is flushed to Email.recipients
     pending_recipients = models.ManyToManyField(Trackee, blank=True)
     fromemail =     models.EmailField(blank=True)
