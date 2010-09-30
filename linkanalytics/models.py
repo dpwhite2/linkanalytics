@@ -48,12 +48,12 @@ class Trackee(models.Model):
     def __unicode__(self):
         return u'%s'%self.username
 
-    # Pylint: disable=E1101
+    # pylint: disable=E1101
     def url_instances(self):
         return self.trackedurlinstance_set.all()
     def urls(self):
         return self.trackedurl_set.all()
-    # Pylint: enable=E1101
+    # pylint: enable=E1101
     
     @staticmethod
     def from_django_user(djuser, comments=""):
@@ -90,14 +90,14 @@ class TrackedUrl(models.Model):
     def __unicode__(self):
         return u'%s'%self.name
 
-    # Pylint: disable=E1101
+    # pylint: disable-msg=E1101
     def url_instances(self):
         return self.trackedurlinstance_set.all()
 
     def url_instances_read(self):
         # instances containing TrackedUrlAccesses with a count value at least 1
         return self.trackedurlinstance_set.annotate(num_accesses=models.Count('trackedurlaccess__count')).filter(num_accesses__gt=0)
-    # Pylint: enable=E1101
+    # pylint: enable-msg=E1101
 
     def add_trackee(self, trackee):
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
@@ -136,7 +136,7 @@ class TrackedUrlInstance(models.Model):
         a = TrackedUrlAccess(instance=self, time=time, count=count, url=url)
         a.save()
 
-    # Pylint: disable=E1101
+    # pylint: disable-msg=E1101
     def _first_access(self):
         ag = self.trackedurlaccess_set.aggregate(models.Min('time'))
         return ag['time__min']
@@ -146,7 +146,7 @@ class TrackedUrlInstance(models.Model):
     def _access_count(self):
         r = self.trackedurlaccess_set.aggregate(models.Sum('count'))['count__sum']
         return r  if r else  0  # handles case where r is None
-    # Pylint: enable=E1101
+    # pylint: enable-msg=E1101
     
     first_access = property(_first_access)
     recent_access = property(_recent_access)
