@@ -116,7 +116,20 @@ def viewSingleSentEmail(request, emailid):
     return HttpResponse('View: viewSingleSentEmail()...  Under Construction.')
     
 def viewEmailReadList(request, emailid):
-    return HttpResponse('View: viewEmailReadList()...  Under Construction.')
+    eml = Email.objects.get(pk=emailid)
+    u = eml.trackedurl
+    
+    def items():
+        for instance in u.url_instances_read():
+            yield { 'urlinstance': instance,
+                    'trackee': instance.trackee,
+                  }
+    
+    itemiter = items()
+    
+    return render_to_response('linkanalytics/email/whoread.html',
+                             {'email': eml, 'items': itemiter },
+                              context_instance=RequestContext(request))
     
 def viewEmailUnreadList(request, emailid):
     return HttpResponse('View: viewEmailUnreadList()...  Under Construction.')

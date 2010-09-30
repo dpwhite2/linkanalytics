@@ -1,0 +1,27 @@
+{% extends "linkanalytics/email/base.html" %}
+
+{% block title %}Email: Read{% endblock %}
+
+{% block content %}
+  <h2>Email Read</h2>
+  <table class='datatable'>
+    <tr>
+      <th>Recipient</th>
+      <th>Notified</th>
+      <th>First Access</th>
+      <th>Most Recent Access</th>
+      <th>Accesses</th>
+    </tr>
+    
+    {% for item in items %}
+    <tr>
+      <td>{{ item.trackee.emailaddress }}</td>
+      <td>{{ item.urlinstance.notified }}</td>
+      <td>{{ item.urlinstance.first_access }}</td>
+      <td>{{ item.urlinstance.recent_access }}</td>
+      <td>{{ item.urlinstance.access_count }}</td>
+    </tr>
+    {% endfor %}
+    
+  </table>
+{% endblock %}

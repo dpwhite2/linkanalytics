@@ -134,8 +134,8 @@ class InstantiateEmails_TestCase(base.LinkAnalytics_TestCaseBase):
         textsrc = ""
         urlbase = 'http://example.com'
         uuid = '0'*32
-        it = LAemail.instantiate_emails(textsrc,htmlsrc,urlbase,(uuid,))
-        text,html = it.next()
+        inst = LAemail.email_instantiator(textsrc,htmlsrc,urlbase)
+        text,html = inst(uuid)
         self.assertEquals(text, textsrc)
         self.assertEquals(html, htmlsrc)
         
@@ -144,8 +144,8 @@ class InstantiateEmails_TestCase(base.LinkAnalytics_TestCaseBase):
         textsrc = "{% trackedurl linkid 'r/path/to/file.ext' %}"
         urlbase = 'http://example.com'
         uuid = '0'*32
-        it = LAemail.instantiate_emails(textsrc,htmlsrc,urlbase,(uuid,))
-        text,html = it.next()
+        inst = LAemail.email_instantiator(textsrc,htmlsrc,urlbase)
+        text,html = inst(uuid)
         url = helpers.urlreverse_redirect_local(uuid=uuid, filepath='path/to/file.ext')
         ##url = 'http://example.com{0}/path/to/file.ext'.format(uuid)
         self.assertEquals(text, '{0}{1}'.format(urlbase,url))

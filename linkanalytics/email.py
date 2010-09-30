@@ -165,18 +165,19 @@ def compile_text_email(content, header='', footer=''):
 
 
 #==============================================================================#
-def instantiate_emails(text, html, urlbase, uuid_iter):
-    """An iterator that returns pairs of instanted email contents.  The return 
-       value is a tuple: (text,html).
+def email_instantiator(texttpl, htmltpl, urlbase):
+    """Returns a function that can be used to instantiate individual emails.  
+       The function will take one argument, the uuid.
     """
-    # TODO: in progress....
-    # TODO: make urlbase a settings variable
-    ttext = Template('{% load tracked_links %}'+text)
-    thtml = Template('{% load tracked_links %}'+html)
+    ttext = Template('{% load tracked_links %}'+texttpl)
+    thtml = Template('{% load tracked_links %}'+htmltpl)
+    ctx = Context({'urlbase': urlbase})
     
-    for uuid in uuid_iter:
-        c = Context({'linkid': uuid, 'urlbase': urlbase})
-        yield (ttext.render(c),thtml.render(c))
+    def _instantiate_email(uuid):
+        ctx['linkid'] = uuid
+        return (ttext.render(ctx),thtml.render(ctx))
+        
+    return _instantiate_email
     
 
 

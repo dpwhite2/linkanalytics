@@ -176,44 +176,52 @@ class Email(models.Model):
     def send(self, recipients):
         if not recipients or not recipients.exists():
             return
+        urlbase = app_settings.URLBASE
+        einstantiator = la_email.email_instantiator(self.txtmsg, self.htmlmsg, urlbase)
+        
         # Note: msgs = list of django.core.mail.EmailMultiAlternatives
-        msgs = list(
-                self._create_multipart_email(text,html,recipient)
-                for (recipient,(text,html))
-                in itertools.izip(recipients, self._instantiate_emails(recipients))
-                )
-
-        r = EmailRecipients(email=self, datesent=datetime.date.today())
-        r.save()
-        for recipient in recipients:
-            r.recipients.add(recipient)
-        r.save()
-
+        msgs = []
         cx = mail.get_connection()
-        cx.send_messages(msgs)
+        
+        # Build the emails
+        for recipient in recipients:
+            i = TrackedUrlInstance(trackedurl=self.trackedurl, trackee=recipient)
+            i.save()
+            text,html = einstantiator(i.uuid)
+            
+            msg = self._create_multipart_email(text,html,recipient,cx)
+            msgs.append((msg, i, recipient,))
+        
+        rs = []  # recipients to whom the email was sent
+        today = datetime.date.today()
+        
+        # Send the emails
+        cx.open()
+        try:
+            for msg,i,rec in msgs:
+                msg.send()
+                i.notified = today
+                i.save()
+                rs.append(rec)
+        finally:
+            cx.close()  # Close the connection!
+            
+            # Record the recipients
+            er = EmailRecipients(email=self, datesent=today)
+            er.save()
+            for recipient in rs:
+                er.recipients.add(recipient)
+            er.save()
+        
 
-    def _create_multipart_email(self, text, html, recipient):
+    def _create_multipart_email(self, text, html, recipient, connection=None):
         msg = mail.EmailMultiAlternatives(
                                 self.subject, text, self.fromemail,
-                                [recipient.emailaddress]
+                                [recipient.emailaddress],
+                                connection=connection
                                 )
         msg.attach_alternative(html, "text/html")
         return msg
-
-    def _instantiate_emails(self, recipients):
-        """Returns an iterator over (text,html) pairs."""
-        urlbase = app_settings.URLBASE
-        return la_email.instantiate_emails(
-                            self.txtmsg, self.htmlmsg, urlbase,
-                            self._generate_urlinstances(recipients)
-                            )
-
-    def _generate_urlinstances(self, recipients):
-        """Returns an iterator over the uuids of newly created UrlInstances."""
-        for recipient in recipients:
-            t = TrackedUrlInstance(trackedurl=self.trackedurl, trackee=recipient)
-            t.save()
-            yield t.uuid
             
     def htmlmsg_brief(self):
         return self.htmlmsg.splitlines()[0]
