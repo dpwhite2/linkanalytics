@@ -14,14 +14,14 @@ class TrackNode(template.Node):
     
 class TrackTrailNode(TrackNode):
     def __init__(self, trailpath):
-        super(TrackTrailNode, self).__init__()
+        TrackNode.__init__(self)
         self.text = create_trackedurl_tag(trailpath)
     def render(self, context):
         return self.text
 
 class TrackUrlNode(TrackNode):
     def __init__(self, url):
-        super(TrackTrailNode, self).__init__()
+        TrackNode.__init__(self)
         p = urlparse.urlsplit(url)
         scheme, netloc, path, query, fragment = p
         u = '{s}/{n}{f}'.format(s=scheme, n=netloc, f=path)
