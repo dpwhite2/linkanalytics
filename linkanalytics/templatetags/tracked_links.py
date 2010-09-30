@@ -6,19 +6,22 @@ register = template.Library()
 
 
 def create_trackedurl_tag(trailpath):
-    return '{{% trackedurl {linkidvar} "{tp}" %}}'.format(linkidvar='linkid',tp=trailpath)
+    s = '{{% trackedurl {linkidvar} "{tp}" %}}'
+    return s.format(linkidvar='linkid',tp=trailpath)
 
 class TrackNode(template.Node):
     pass
     
 class TrackTrailNode(TrackNode):
     def __init__(self, trailpath):
+        super(TrackTrailNode, self).__init__()
         self.text = create_trackedurl_tag(trailpath)
     def render(self, context):
         return self.text
 
 class TrackUrlNode(TrackNode):
     def __init__(self, url):
+        super(TrackTrailNode, self).__init__()
         p = urlparse.urlsplit(url)
         scheme, netloc, path, query, fragment = p
         u = '{s}/{n}{f}'.format(s=scheme, n=netloc, f=path)
@@ -38,18 +41,21 @@ class TrackPixelNode(TrackNode):
         # Note: double braces are needed for 'format()' call.
         a = '{% if not ignore_pixelimages %}'
         b = '{% endif %}'
-        return '{0}{1}{2}'.format(a,self.text,b)
+        return '{0}{1}{2}'.format(a, self.text, b)
 
 
 def track(parser, token):
     try:
         tagname,category,arg = token.split_contents()
     except ValueError:
-        raise template.TemplateSyntaxError, "%r tag requires two arguments" % token.contents.split()[0]
+        msg = "%r tag requires two arguments" % token.contents.split()[0]
+        raise template.TemplateSyntaxError(msg)
     if not (category[0] == category[-1] and category[0] in ('"', "'")):
-        raise template.TemplateSyntaxError, "%r tag's first argument should be in quotes" % tagname
+        msg = "%r tag's first argument should be in quotes" % tagname
+        raise template.TemplateSyntaxError(msg)
     if not (arg[0] == arg[-1] and arg[0] in ('"', "'")):
-        raise template.TemplateSyntaxError, "%r tag's second argument should be in quotes" % tagname
+        msg = "%r tag's second argument should be in quotes" % tagname
+        raise template.TemplateSyntaxError(msg)
     
     category = category[1:-1]
     arg = arg[1:-1]
@@ -61,7 +67,9 @@ def track(parser, token):
     elif category=='pixel':
         return TrackPixelNode(arg)
     else:
-        raise template.TemplateSyntaxError, "%r tag's first argument, '%s', was not recognized" % (tagname,category)
+        fmt = (tagname, category)
+        msg = "%r tag's first argument, '%s', was not recognized" % fmt
+        raise template.TemplateSyntaxError(msg)
 
 register.tag('track',track)
     
@@ -76,7 +84,9 @@ class TrackedurlNode(template.Node):
         try:
             urlbase = self.urlbase.resolve(context)
             linkid = self.linkid.resolve(context)
-            urlpart = urlreverse('linkanalytics-accessview', kwargs={'uuid': linkid, 'tailpath':self.trailpath})
+            urlpart = urlreverse('linkanalytics-accessview', 
+                            kwargs={'uuid': linkid, 'tailpath':self.trailpath}
+                            )
             return '{base}{p}'.format(base=urlbase, p=urlpart)
         except Exception as e:
             return ''
@@ -86,14 +96,16 @@ def trackedurl(parser, token):
     try:
         tagname,linkid,trailpath = token.split_contents()
     except ValueError:
-        raise template.TemplateSyntaxError, "%r tag requires two arguments" % token.contents.split()[0]
+        msg = "%r tag requires two arguments" % token.contents.split()[0]
+        raise template.TemplateSyntaxError(msg)
     if not (trailpath[0] == trailpath[-1] and trailpath[0] in ('"', "'")):
-        raise template.TemplateSyntaxError, "%r tag's second argument should be in quotes" % tagname
+        msg = "%r tag's second argument should be in quotes" % tagname
+        raise template.TemplateSyntaxError(msg)
     
     trailpath = trailpath[1:-1]
     
     return TrackedurlNode(linkid, trailpath)
 
-register.tag('trackedurl',trackedurl)
+register.tag('trackedurl', trackedurl)
 
 
