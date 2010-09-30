@@ -22,10 +22,7 @@ def accessTrackedUrl(request, uuid, tailpath):
     qs = TrackedUrlInstance.objects.filter(uuid=uuid)
     if not qs.exists():
         raise Http404
-    
-    ##print 'HTTP_HOST: {0}'.format(request.META['HTTP_HOST'])
-    ##print 'build_absolute_uri(): {0}'.format(request.build_absolute_uri())
-    ##url = '{0}{1}'.format(app_settings.URLBASE, request.path)
+        
     url = request.build_absolute_uri()
     
     try:

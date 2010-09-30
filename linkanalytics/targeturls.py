@@ -15,7 +15,7 @@ urlpatterns = patterns('linkanalytics',
     (r'^https/'+DOMAIN+r'(?:/'+PATH+r')?/?$', 'targetviews.targetview_redirect', {'scheme':'https'}, 'redirect-https'),
     (r'^r/'+PATH+r'/?$', 'targetviews.targetview_redirect', {}, 'redirect-local'),
     
-    (r'^h/'+FILEPATH+r'/?$', 'targetviews.targetview_html'),
+    (r'^h/'+FILEPATH+r'/?$', 'targetviews.targetview_html', {}, 'targetview-html'),
     (r'^gpx/?$', 'targetviews.targetview_pixelgif', {}, 'targetview-pixelgif'),
     (r'^ppx/?$', 'targetviews.targetview_pixelpng', {}, 'targetview-pixelpng'),
 )

@@ -4,6 +4,7 @@
 import datetime
 
 from linkanalytics.models import TrackedUrlInstance
+from linkanalytics import targetviews
 import helpers
 import base
 
@@ -35,9 +36,6 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         #   URLINSTANCE  TARGETVIEW
         #   URLINSTANCE = /linkanalytics/access/{uuid}
         #   TARGETVIEW =  /r/linkanalytics/testurl/
-        ##urltail = urlreverse('redirect-local', urlconf='linkanalytics.targeturls', kwargs={'filepath':'linkanalytics/testurl/'})
-        ##urltail = urltail[1:] # remove leading '/'
-        ##url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
         url = helpers.urlreverse_redirect_local(i.uuid, filepath='linkanalytics/testurl/')
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
@@ -62,9 +60,6 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         #   URLINSTANCE = /linkanalytics/access/{uuid}
         #   TARGETVIEW =  /http/www.google.com/       
         url = helpers.urlreverse_redirect_http(uuid=i.uuid, domain='www.google.com')
-        ##urltail = urlreverse('redirect-http', urlconf='linkanalytics.targeturls', kwargs={'domain':'www.google.com','filepath':''})
-        ##urltail = urltail[1:] # remove leading '/'
-        ##url = urlreverse('linkanalytics-accessview', kwargs={'uuid': i.uuid, 'tailpath':urltail})
         
         # Limitation of Django testing framework: non-local urls will not be 
         # accessed.  So, in this case, www.google.com is NOT actually accessed.  
@@ -88,7 +83,18 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 
 class ViewHtml_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    pass
+    def test_email_receiptThankYou(self):
+        u = self.new_trackedurl('url1')
+        t = self.new_trackee('trackee1')
+        i = u.add_trackee(t)
+        
+        path = 'email/access-thankyou.html'
+        
+        # make sure it can be accessed via the tracked url
+        url = helpers.urlreverse_targetview_html(i.uuid, path)
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        
 
 class ViewPixelGif_TestCase(base.LinkAnalytics_DBTestCaseBase):
     pass

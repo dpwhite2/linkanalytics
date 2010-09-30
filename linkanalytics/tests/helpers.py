@@ -25,5 +25,10 @@ def urlreverse_redirect_local(uuid, filepath):
     urltail = urltail[1:] # remove leading '/'
     return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
     
+def urlreverse_targetview_html(uuid, filepath):
+    urltail = urlreverse('targetview-html', urlconf='linkanalytics.targeturls', kwargs={'filepath':filepath})
+    urltail = urltail[1:] # remove leading '/'
+    return urlreverse('linkanalytics-accessview', kwargs={'uuid': uuid, 'tailpath':urltail})
+    
 #==============================================================================#
 

@@ -222,17 +222,22 @@ class Email(models.Model):
 
 class DraftEmail(models.Model):
     # An Email object is created when the EmailDraft is sent.  At that point, the EmailDraft may not be modified.
-    # Also when sent, pending_recipients is flushed to SentEmail.recipients
+    # Also when sent, pending_recipients is flushed to Email.recipients
     pending_recipients = models.ManyToManyField(Trackee, blank=True)
     fromemail =     models.EmailField(blank=True)
     subject =       models.CharField(max_length=256, blank=True)
     message =       models.TextField(blank=True)
     sent =          models.BooleanField(default=False)
     pixelimage =    models.BooleanField(default=False)
-    htmlheader =        models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,match=r'.*\.html',max_length=255,blank=True)
-    htmlfooter =        models.FilePathField(path=app_settings.EMAIL_FOOTERSDIR,match=r'.*\.html',max_length=255,blank=True)
-    textheader =        models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,match=r'.*\.txt',max_length=255,blank=True)
-    textfooter =        models.FilePathField(path=app_settings.EMAIL_FOOTERSDIR,match=r'.*\.txt',max_length=255,blank=True)
+    
+    htmlheader =    models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,
+                                   match=r'.*\.html',max_length=255,blank=True)
+    htmlfooter =    models.FilePathField(path=app_settings.EMAIL_FOOTERSDIR,
+                                   match=r'.*\.html',max_length=255,blank=True)
+    textheader =    models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,
+                                   match=r'.*\.txt',max_length=255,blank=True)
+    textfooter =    models.FilePathField(path=app_settings.EMAIL_FOOTERSDIR,
+                                   match=r'.*\.txt',max_length=255,blank=True)
 
     def __unicode__(self):
         n = self.pending_recipients.count()
@@ -278,6 +283,9 @@ class DraftEmail(models.Model):
         return email_model
 
     def _compile(self, **kwargs):
+        """Compile the DraftEmail object into an Email object.  Do not call 
+           directly, instead use send().
+        """
         if not self.subject:
             self.subject = '[No Subject]'
         text,html = la_email.compile_email(self.message, **kwargs)
