@@ -32,7 +32,7 @@ class EmailAdmin(admin.ModelAdmin):
     list_display = ('subject','trackedurl','htmlmsg_brief',)
     
 class DraftEmailAdmin(admin.ModelAdmin):
-    list_display = ('subject','message_brief','sent','pixelimage',)
+    list_display = ('subject','message_brief','sent','pixelimage','htmlheader','htmlfooter','textheader','textfooter')
 
 admin.site.register(TrackedUrl, TrackedUrlAdmin)
 admin.site.register(TrackedUrlInstance, TrackedUrlInstanceAdmin)

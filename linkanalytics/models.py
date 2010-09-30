@@ -229,6 +229,10 @@ class DraftEmail(models.Model):
     message =       models.TextField(blank=True)
     sent =          models.BooleanField(default=False)
     pixelimage =    models.BooleanField(default=False)
+    htmlheader =        models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,match=r'.*\.html',max_length=255,blank=True)
+    htmlfooter =        models.FilePathField(path=app_settings.EMAIL_FOOTERSDIR,match=r'.*\.html',max_length=255,blank=True)
+    textheader =        models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,match=r'.*\.txt',max_length=255,blank=True)
+    textfooter =        models.FilePathField(path=app_settings.EMAIL_FOOTERSDIR,match=r'.*\.txt',max_length=255,blank=True)
 
     def __unicode__(self):
         n = self.pending_recipients.count()
@@ -252,6 +256,18 @@ class DraftEmail(models.Model):
             raise EmailAlreadySentError()
         if self.pixelimage:
             kwargs['pixelimage_type'] = 'png'
+        if self.htmlheader:
+            with open(self.htmlheader) as f:
+                kwargs['html_header'] = f.read()
+        if self.htmlfooter:
+            with open(self.htmlfooter) as f:
+                kwargs['html_footer'] = f.read()
+        if self.textheader:
+            with open(self.textheader) as f:
+                kwargs['text_header'] = f.read()
+        if self.textfooter:
+            with open(self.textfooter) as f:
+                kwargs['text_footer'] = f.read()
         email_model = self._compile(**kwargs)
         email_model.save()
         email_model.send(self.pending_recipients.all())
