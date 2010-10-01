@@ -2,10 +2,10 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import resolve, Resolver404
+from django.core.urlresolvers import resolve, Resolver404, reverse as urlreverse
 
 from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
-from linkanalytics.models import Email, DraftEmail
+from linkanalytics.models import Email, DraftEmail, resolve_emails
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics.forms import ComposeEmailForm
 from linkanalytics import app_settings
@@ -15,9 +15,13 @@ import datetime
 import sys
 import traceback
 
-# this should be a configurable setting
+
+
+# this should be a configurable setting?
 _TARGETURLCONF = "linkanalytics.targeturls"
 
+#==============================================================================#
+# Linkanalytics basic views
 
 def accessTrackedUrl(request, uuid, tailpath):    
     tailpath = '/%s'%tailpath
@@ -67,9 +71,25 @@ def createTrackee(request):
                              {'form': form, },
                               context_instance=RequestContext(request))
 
+#==============================================================================#
+# Linkanalytics Email views
+
+
+def _email_render_to_response(template, dictionary, context_instance):
+    """Helper that adds context variables needed by all email views."""
+    
+    sent_count = Email.objects.all().count()
+    draft_count = DraftEmail.objects.filter(sent=False).count()
+    contact_count = Trackee.objects.exclude(emailaddress='').count()
+    dictionary.update( {'sent_count': sent_count, 
+                        'draft_count': draft_count, 
+                        'contact_count': contact_count} )
+    return render_to_response(template, dictionary, 
+                              context_instance=context_instance)
+
 
 def viewEmail(request):
-    return render_to_response('linkanalytics/email/email.html', {},
+    return _email_render_to_response('linkanalytics/email/email.html', {},
                               context_instance=RequestContext(request))
     
     
@@ -81,39 +101,50 @@ def composeEmail(request, emailid=None):
             instance = DraftEmail()
         form = ComposeEmailForm(request.POST, instance=instance)
         if form.is_valid(): # All validation rules pass
+            # get data in 'to' and convert it to 'trackees'
+            d = resolve_emails(form.cleaned_data['to'])
             # Process the data in form.cleaned_data
-            draft = form.save()
+            draft = form.save(commit=False)
+            draft.pending_recipients.clear()
+            for t in d['trackees']:
+                draft.pending_recipients.add(t)
+            draft.save()
+            form.save_m2m()
             if 'do_save' in request.POST:
-                absurl = '/linkanalytics/email/compose/{0}/'.format(draft.pk)
-                return HttpResponseRedirect(absurl)
+                url = urlreverse('linkanalytics-email-idcompose', 
+                                 kwargs={'emailid':draft.pk})
+                return HttpResponseRedirect(url)
             elif 'do_send' in request.POST:
-                # TODO: create Email from DraftEmail, and send it
                 draft.send()
-                absurl = '/linkanalytics/email/compose/{0}/'.format(draft.pk)
-                return HttpResponseRedirect(absurl)
+                url = urlreverse('linkanalytics-email-idcompose', 
+                                 kwargs={'emailid':draft.pk})
+                return HttpResponseRedirect(url)
     else:
         if emailid is not None:
             form = ComposeEmailForm(instance=DraftEmail.objects.get(pk=emailid))
         else:
             form = ComposeEmailForm()
-
-    return render_to_response('linkanalytics/email/compose.html',
-                             {'form': form, 'emailid': emailid},
-                              context_instance=RequestContext(request))
+    contacts = Trackee.objects.exclude(emailaddress='')
+    return _email_render_to_response('linkanalytics/email/compose.html',
+                             {'form': form, 'emailid': emailid, 
+                              'contacts': contacts},
+                             context_instance=RequestContext(request))
 
 
 def viewSentEmails(request):
-    return render_to_response('linkanalytics/email/sent.html',
+    return _email_render_to_response('linkanalytics/email/sent.html',
                              {'emails': Email.objects.all() },
                               context_instance=RequestContext(request))
 
 def viewDraftEmails(request):
-    return render_to_response('linkanalytics/email/drafts.html',
+    return _email_render_to_response('linkanalytics/email/drafts.html',
                              {'drafts': DraftEmail.objects.filter(sent=False) },
                               context_instance=RequestContext(request))
 
 def viewEmailContacts(request):
-    return HttpResponse('View: Under Construction.')
+    return _email_render_to_response('linkanalytics/email/contacts.html',
+                    { 'contacts': Trackee.objects.exclude(emailaddress='') },
+                    context_instance=RequestContext(request))
 
 
 def viewSingleSentEmail(request, emailid):
@@ -131,12 +162,25 @@ def viewEmailReadList(request, emailid):
     
     itemiter = items()
     
-    return render_to_response('linkanalytics/email/whoread.html',
+    return _email_render_to_response('linkanalytics/email/whoread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))
     
 def viewEmailUnreadList(request, emailid):
-    return HttpResponse('View: Under Construction.')
+    eml = Email.objects.get(pk=emailid)
+    u = eml.trackedurl
+    
+    def items():
+        for instance in u.url_instances_notread():
+            yield { 'urlinstance': instance,
+                    'trackee': instance.trackee,
+                  }
+    
+    itemiter = items()
+    
+    return _email_render_to_response('linkanalytics/email/whounread.html',
+                             {'email': eml, 'items': itemiter },
+                              context_instance=RequestContext(request))
     
 def viewEmailRecipientsList(request, emailid):
     return HttpResponse('View: Under Construction.')
@@ -144,7 +188,7 @@ def viewEmailRecipientsList(request, emailid):
 def viewSentEmailContent(request, emailid):
     return HttpResponse('View: Under Construction.')
 
-
+#==============================================================================#
 
 
 

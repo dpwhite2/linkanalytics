@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+
 #from django.db.models import F
 
 import uuid
@@ -74,6 +75,8 @@ class Trackee(models.Model):
                         emailaddress=   djuser.email,
                         comments=       comments,
                         is_django_user= True )
+                        
+    
 
 _EMAILLC = r'[-\w\d!#$%&\'*+/=?^_`{|}~]'
 _EMAILLC2 = r'[-\w\d!#$%&\'*+/=?^_`{|}~.]'  # Note: contains a period
@@ -87,9 +90,24 @@ def resolve_emails(s):
     """Convert a string of emails to a list of trackees and a list of 
        unrecognized emails."""
     parts = _re_emailsplit.split(s)
+    trackees = set()
+    unknown_emails = set()
+    unknown_names = set()
     for em in parts:
-        m = _re_email.match(em)
-    pass
+        if em.find('@')!=-1:
+            # this is an email address
+            qs = Trackee.objects.filter(emailaddress=email)
+            if qs.exists():
+                trackees.add(qs[0])
+            else:
+                unknown_emails.add(em)
+        else:
+            try:
+                trackees.add(Trackee.objects.get(username=em))
+            except ObjectDoesNotExist:
+                unknown_names.add(em)
+    return { 'trackees':trackees, 'unknown_emails':unknown_emails, 
+             'unknown_names':unknown_names }
 
 
 class TrackedUrl(models.Model):
@@ -121,6 +139,13 @@ class TrackedUrl(models.Model):
         return self.trackedurlinstance_set.annotate(
                         num_accesses=models.Count('trackedurlaccess__count')
                     ).filter(num_accesses__gt=0)
+
+    def url_instances_unread(self):
+        """A QuerySet of all TrackedUrlInstances associated with this 
+           TrackedUrl which have not been accessed (or 'not read')."""
+        return self.trackedurlinstance_set.annotate(
+                        num_accesses=models.Count('trackedurlaccess__count')
+                    ).filter(num_accesses=0)
     # pylint: enable-msg=E1101
 
     def add_trackee(self, trackee):
@@ -222,6 +247,18 @@ class Email(models.Model):
     subject =       models.CharField(max_length=256, editable=False)
     txtmsg =        models.TextField(editable=False)
     htmlmsg =       models.TextField(editable=False)
+    
+    def read_count(self):
+        """Returns the number of recipients who have read this email."""
+        return self.trackedurl.url_instances_read().count()
+    
+    def unread_count(self):
+        """Returns the number of recipients who have not read this email."""
+        return self.trackedurl.url_instances_unread().count()
+        
+    def recipient_count(self):
+        """Returns the number of recipients of this email."""
+        return self.trackedurl.url_instances().count()
 
     def send(self, recipients):
         """Attempt to send the email.  This may be called on emails that have 

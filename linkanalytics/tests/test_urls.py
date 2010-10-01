@@ -16,21 +16,31 @@ PREFIX = r'^linkanalytics/'
 
 urlpatterns = patterns('linkanalytics',
 
-    (PREFIX+r'email/$', 'views.viewEmail'),
-
-    (PREFIX+r'email/compose/$', 'views.composeEmail'),
-    (PREFIX+r'email/compose/(?P<emailid>\d+)/$', 'views.composeEmail'),
+    (PREFIX+r'email/$', 'views.viewEmail', {}, 'linkanalytics-email-main'),
     
-    (PREFIX+r'email/viewsent/$', 'views.viewSentEmails'),
-    (PREFIX+r'email/viewdrafts/$', 'views.viewDraftEmails'),
-    (PREFIX+r'email/contacts/$', 'views.viewEmailContacts'),
+    (PREFIX+r'email/compose/$', 'views.composeEmail', 
+                    {}, 'linkanalytics-email-compose'),
+    (PREFIX+r'email/compose/(?P<emailid>\d+)/$', 'views.composeEmail', 
+                    {}, 'linkanalytics-email-idcompose'),
     
-    (PREFIX+r'email/(?P<emailid>\d+)/$', 'views.viewSingleSentEmail'),
-    (PREFIX+r'email/(?P<emailid>\d+)/read/$', 'views.viewEmailReadList'),
-    (PREFIX+r'email/(?P<emailid>\d+)/unread/$', 'views.viewEmailUnreadList'),
-    (PREFIX+r'email/(?P<emailid>\d+)/recipients/$', 
-                    'views.viewEmailRecipientsList'),
-    (PREFIX+r'email/(?P<emailid>\d+)/content/$', 'views.viewSentEmailContent'),
+    (PREFIX+r'email/viewsent/$', 'views.viewSentEmails', 
+                    {}, 'linkanalytics-email-viewsent'),
+    (PREFIX+r'email/viewdrafts/$', 'views.viewDraftEmails', 
+                    {}, 'linkanalytics-email-viewdrafts'),
+    (PREFIX+r'email/contacts/$', 'views.viewEmailContacts', 
+                    {}, 'linkanalytics-email-viewcontacts'),
+    
+    (PREFIX+r'email/(?P<emailid>\d+)/$', 'views.viewSingleSentEmail', 
+                    {}, 'linkanalytics-email-viewsingle'),
+    (PREFIX+r'email/(?P<emailid>\d+)/read/$', 'views.viewEmailReadList', 
+                    {}, 'linkanalytics-email-viewread'),
+    (PREFIX+r'email/(?P<emailid>\d+)/unread/$', 'views.viewEmailUnreadList', 
+                    {}, 'linkanalytics-email-viewunread'),
+    (PREFIX+r'email/(?P<emailid>\d+)/recipients/$', 'views.viewEmailRecipientsList', 
+                    {}, 'linkanalytics-email-viewrecipients'),
+    (PREFIX+r'email/(?P<emailid>\d+)/content/$', 'views.viewSentEmailContent', 
+                    {}, 'linkanalytics-email-viewsentcontent'),
+    
     
     (PREFIX+r'create_trackee/$', 'views.createTrackee'),
     (PREFIX+r'create_trackedurl/$', 'views.createTrackedUrl'),

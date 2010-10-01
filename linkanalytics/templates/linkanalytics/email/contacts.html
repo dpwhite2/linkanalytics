@@ -1,0 +1,22 @@
+{% extends "linkanalytics/email/base.html" %}
+
+{% block title %}Email: Contacts{% endblock %}
+
+{% block content %}
+  <h2>Email Contacts</h2>
+  <table class='datatable'>
+    <tr>
+      <th>Username</th>
+      <th colspan="2">Name</th>
+      <th>Email</th>
+    </tr>
+    {% for item in contacts %}
+    <tr>
+      <td>{{ item.username }}</td>
+      <td>{{ item.first_name }}</td>
+      <td>{{ item.last_name }}</td>
+      <td>{{ item.emailaddress }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

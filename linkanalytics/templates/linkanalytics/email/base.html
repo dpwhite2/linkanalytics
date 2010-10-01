@@ -4,7 +4,7 @@
 <head>
   <title>{% block title %}{% endblock %}</title>
   <style type="text/css" media="screen">
-    .stdform th { text-align: right; vertical-align: top; }
+    .formtable th { text-align: right; vertical-align: top; }
     .datatable {
       border: solid 1px gray;
       border-collapse: collapse;
@@ -30,6 +30,8 @@
       /*height: 100%;*/
     }
   </style>
+  {% block headelem_xtra %}
+  {% endblock %}
 </head>
 
 <body>
@@ -39,9 +41,9 @@
     <ul>
       <li><a href="/linkanalytics/email/">Email Home</a></li>
       <li><a href="/linkanalytics/email/compose/">Compose</a></li>
-      <li><a href="/linkanalytics/email/viewsent/">Sent</a></li>
-      <li><a href="/linkanalytics/email/viewdrafts/">Drafts</a></li>
-      <li><a href="/linkanalytics/email/contacts/">Contacts</a></li>
+      <li><a href="/linkanalytics/email/viewsent/">Sent</a> ({{ sent_count }})</li>
+      <li><a href="/linkanalytics/email/viewdrafts/">Drafts</a> ({{ draft_count }})</li>
+      <li><a href="/linkanalytics/email/contacts/">Contacts</a> ({{ contact_count }})</li>
     </ul>
   {% endblock %}
   </div>

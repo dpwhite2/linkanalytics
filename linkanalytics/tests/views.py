@@ -2,8 +2,11 @@
     Tests for normal views as well as targetviews.
 """
 import datetime
+import imghdr
 
-from linkanalytics.models import TrackedUrlInstance
+from django.core.urlresolvers import reverse as urlreverse
+
+from linkanalytics.models import TrackedUrlInstance, Email, DraftEmail, Trackee
 from linkanalytics import targetviews
 import helpers
 import base
@@ -20,8 +23,130 @@ class CreateTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
 class CreateTrackee_TestCase(base.LinkAnalytics_DBTestCaseBase):
     pass
 
-#class CreateTrackedUrlTarget_TestCase(LinkAnalytics_DBTestCaseBase):
-#    pass
+#==============================================================================#
+# Email view tests:
+
+class ViewEmailMain_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-main')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            
+    def test_contacts_count(self):
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-main')
+            # Case 1: no trackees
+            response = self.client.get(url)
+            self.assertEquals(response.context['contact_count'], 0)
+            
+            # Case 2: one trackee with an email
+            t = Trackee(username='withemail', emailaddress='user0@example.com')
+            t.save()
+            response = self.client.get(url)
+            self.assertEquals(response.context['contact_count'], 1)
+            
+            # Case 3: one trackee with and one without an email
+            t = Trackee(username='withoutemail')
+            t.save()
+            response = self.client.get(url)
+            self.assertEquals(response.context['contact_count'], 1)
+            
+    def test_draft_count(self):
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-main')
+            # Case 1: no drafts
+            response = self.client.get(url)
+            self.assertEquals(response.context['draft_count'], 0)
+            
+            # Case 2: one unsent draft
+            e = DraftEmail()
+            e.save()
+            response = self.client.get(url)
+            self.assertEquals(response.context['draft_count'], 1)
+            
+            # Case 3: first two unsent drafts, then one unsent draft and one 
+            #         sent draft
+            e = DraftEmail()
+            e.save()
+            response = self.client.get(url)
+            self.assertEquals(response.context['draft_count'], 2)
+            e.sent = True
+            e.save()
+            response = self.client.get(url)
+            self.assertEquals(response.context['draft_count'], 1)
+            
+    def test_sent_count(self):
+        u = self.new_trackedurl('trackedurl')
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-main')
+            # Case 1: no emails
+            response = self.client.get(url)
+            self.assertEquals(response.context['sent_count'], 0)
+            
+            # Case 2: one sent email
+            e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+            e.save()
+            response = self.client.get(url)
+            self.assertEquals(response.context['sent_count'], 1)
+        
+    
+class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-compose')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            
+    def test_basic_edit(self):
+        # Very basic test... just see that url exists.
+        e = DraftEmail()
+        e.save()
+        id = e.pk
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-idcompose', 
+                             kwargs={'emailid':id})
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+    
+class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewsent')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+    
+class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewdrafts')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+    
+class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        u = self.new_trackedurl('trackedurl')
+        e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+        e.save()
+        id = e.pk
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewread', 
+                             kwargs={'emailid': id})
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
 
 #==============================================================================#
 # Target View tests:
@@ -103,7 +228,17 @@ class ViewPixelGif_TestCase(base.LinkAnalytics_DBTestCaseBase):
     pass
 
 class ViewPixelPng_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    pass
+    def test_basic(self):
+        u = self.new_trackedurl('url1')
+        t = self.new_trackee('trackee1')
+        i = u.add_trackee(t)
+        
+        url = helpers.urlreverse_targetview_pixelpng(i.uuid)
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        # In imghdr.what(), the first arg (the filename) is ignored when the 
+        # 'h' arg (a byte stream) is given.
+        self.assertEquals(imghdr.what('',h=response.content), 'png')
 
 
 #==============================================================================#

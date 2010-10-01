@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 
 from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
 from linkanalytics.models import Email, DraftEmail, TrackedUrlAccess
+from linkanalytics.models import EmailRecipients
 
 # Disable Nose test autodiscovery for this module.
 __test__ = False
@@ -74,6 +75,7 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         Trackee.objects.all().delete()
         Email.objects.all().delete()
         DraftEmail.objects.all().delete()
+        EmailRecipients.objects.all().delete()
         
         for user in self.users:
             user.delete()

@@ -4,7 +4,7 @@
 
 {% block content %}
   <h2>Email Sent</h2>
-  <table>
+  <table class='datatable'>
     <tr>
       <th>Subject</th>
       <th colspan="3">Recipients</th>
@@ -17,12 +17,15 @@
       </td>
       <td>
         <a href="{% url linkanalytics.views.viewEmailReadList emailid=item.pk %}">read</a>
+        ({{ item.read_count }})
       </td>
       <td>
         <a href="{% url linkanalytics.views.viewEmailUnreadList emailid=item.pk %}">unread</a>
+        ({{ item.unread_count }})
       </td>
       <td>
         <a href="{% url linkanalytics.views.viewEmailRecipientsList emailid=item.pk %}">all</a>
+        ({{ item.recipient_count }})
       </td>
       <td>
         <a href="{% url linkanalytics.views.viewSentEmailContent emailid=item.pk %}">view</a>
