@@ -6,12 +6,13 @@
   <h2>Email Not Read by</h2>
   <table class='datatable'>
     <tr>
-      <th>Recipient</th>
+      <th colspan="2">Recipient</th>
       <th>Notified</th>
     </tr>
     
     {% for item in items %}
     <tr>
+      <td>{{ item.trackee.username }}</td>
       <td>{{ item.trackee.emailaddress }}</td>
       <td>{{ item.urlinstance.notified }}</td>
     </tr>

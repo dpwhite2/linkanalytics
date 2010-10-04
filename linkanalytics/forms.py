@@ -51,7 +51,14 @@ class ComposeEmailForm(forms.ModelForm):
         else:
             return DraftEmail.objects.get(pk=self.instance.pk)
         
-    
+
+class CreateContactForm(forms.ModelForm):
+    # Override the default Trackee emailaddress field, which is *not* required.
+    emailaddress = forms.EmailField(required=True)
+    class Meta:
+        model = Trackee
+        exclude = ['is_django_user',]
+        
 
 
 

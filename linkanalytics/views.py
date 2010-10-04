@@ -7,7 +7,7 @@ from django.core.urlresolvers import resolve, Resolver404, reverse as urlreverse
 from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
 from linkanalytics.models import Email, DraftEmail, resolve_emails
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
-from linkanalytics.forms import ComposeEmailForm
+from linkanalytics.forms import ComposeEmailForm, CreateContactForm
 from linkanalytics import app_settings
 
 
@@ -146,6 +146,32 @@ def viewEmailContacts(request):
                     { 'contacts': Trackee.objects.exclude(emailaddress='') },
                     context_instance=RequestContext(request))
 
+def createEmailContact(request, username=None):
+    if request.method == 'POST': # If the form has been submitted...
+        if username is not None:
+            t = Trackee.objects.get(username=username)
+            if not t.emailaddress:
+                return HttpResponse('Contacts must have an email address.') 
+        else:
+            t = Trackee()
+        form = CreateContactForm(request.POST, instance=t)
+        if form.is_valid(): 
+            form.save()
+            url = urlreverse('linkanalytics-email-viewcontacts')
+            return HttpResponseRedirect(url)
+    else:
+        if username is not None:
+            t = Trackee.objects.get(username=username)
+            if not t.emailaddress:
+                return HttpResponse('Contacts must have an email address.') 
+            form = CreateContactForm(instance=t)
+        else:
+            form = CreateContactForm()
+    
+    return _email_render_to_response('linkanalytics/email/create_contact.html',
+                    { 'form': form },
+                    context_instance=RequestContext(request))
+
 
 def viewSingleSentEmail(request, emailid):
     return HttpResponse('View: Under Construction.')
@@ -171,7 +197,7 @@ def viewEmailUnreadList(request, emailid):
     u = eml.trackedurl
     
     def items():
-        for instance in u.url_instances_notread():
+        for instance in u.url_instances_unread():
             yield { 'urlinstance': instance,
                     'trackee': instance.trackee,
                   }
