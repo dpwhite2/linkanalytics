@@ -99,6 +99,7 @@ def composeEmail(request, emailid=None):
             instance = DraftEmail.objects.get(pk=emailid)
         else:
             instance = DraftEmail()
+            instance.save()
         form = ComposeEmailForm(request.POST, instance=instance)
         if form.is_valid(): # All validation rules pass
             # get data in 'to' and convert it to 'trackees'

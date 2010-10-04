@@ -39,6 +39,7 @@ def validate_onezero(value):
 # TrackedUrlInstances are created by the application when a Trackee is assigned
 # to a TrackedUrl.
 
+_re_email_username_replace = re.compile(r'[^_\w\d]')
 
 class Trackee(models.Model):
     """The 'actor' whose visits to particular URLs are tracked by 
@@ -76,6 +77,19 @@ class Trackee(models.Model):
                         comments=       comments,
                         is_django_user= True )
                         
+    @staticmethod
+    def from_email(email, comments=""):
+        """Create a Trackee from the given email address."""
+        basename = _re_email_username_replace.sub('_',email)
+        name = basename
+        i = 0
+        # Append integer until username is unique.
+        while Trackee.objects.filter(username=name).exists():
+            name = '{0}{1}'.format(basename,i)
+            i+=1
+        return Trackee( username=       name,
+                        emailaddress=   email,
+                        comments=       comments )
     
 
 _EMAILLC = r'[-\w\d!#$%&\'*+/=?^_`{|}~]'
@@ -86,28 +100,25 @@ _EMAIL = _EMAILLOCAL+r'@'+_EMAILDOMAIN
 _re_email = re.compile(_EMAIL)
 _re_emailsplit = re.compile(r'[\s,]+')
 
-def resolve_emails(s):
-    """Convert a string of emails to a list of trackees and a list of 
-       unrecognized emails."""
-    parts = _re_emailsplit.split(s)
+def resolve_emails(parts):
+    """Convert a sequence of emails and/or usernames into Trackees."""
     trackees = set()
     unknown_emails = set()
-    unknown_names = set()
     for em in parts:
         if em.find('@')!=-1:
             # this is an email address
-            qs = Trackee.objects.filter(emailaddress=email)
+            qs = Trackee.objects.filter(emailaddress=em)
             if qs.exists():
                 trackees.add(qs[0])
             else:
-                unknown_emails.add(em)
+                t = Trackee.from_email(em)
+                t.save()
+                trackees.add(t)
         else:
-            try:
-                trackees.add(Trackee.objects.get(username=em))
-            except ObjectDoesNotExist:
-                unknown_names.add(em)
-    return { 'trackees':trackees, 'unknown_emails':unknown_emails, 
-             'unknown_names':unknown_names }
+            # The ComposeEmail form validates usernames, so the following 
+            # should never raise an ObjectDoesNotExist exception.
+            trackees.add(Trackee.objects.get(username=em))
+    return { 'trackees':trackees, 'unknown_emails':unknown_emails }
 
 
 class TrackedUrl(models.Model):

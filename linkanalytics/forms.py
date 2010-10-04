@@ -1,4 +1,9 @@
+import re
+
 from django import forms
+from django.core.validators import validate_email
+from django.core.exceptions import ObjectDoesNotExist
+
 from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance
 from linkanalytics.models import Email, DraftEmail, resolve_emails
 
@@ -26,8 +31,35 @@ class TrackeeForm(forms.ModelForm):
 # - Provide ability for link customization
 # - allow trackees to be added
 # - allow ability to create quick trackees
+
+# Split on commas and/or whitespace
+_re_toemailsplit = re.compile(r'[\s,]+')
+_re_username = re.compile(r'^[_\w\d]+$')
+
+class ToEmailField(forms.Field):
+    def to_python(self, value):
+        if not value:
+            return []
+        return _re_toemailsplit.split(value)
+        
+    def validate(self, value):
+        super(ToEmailField, self).validate(value)
+        # a part can either be an email address or a known username
+        for part in value:
+            if _re_username.match(part):
+                try:
+                    t = Trackee.objects.get(username=part)
+                except ObjectDoesNotExist:
+                    raise forms.ValidationError('Recipient {0} was not found.'.format(part))
+                if t.emailaddress == '':
+                    raise forms.ValidationError('Recipient {0} does not have an email address.'.format(t.username))
+            else:
+                validate_email(part)
+
+
 class ComposeEmailForm(forms.ModelForm):
-    to = forms.CharField(widget=forms.Textarea, required=False)
+    #to = forms.CharField(widget=forms.Textarea, required=False)
+    to = ToEmailField(widget=forms.Textarea, required=False)
     
     class Meta:
         model = DraftEmail

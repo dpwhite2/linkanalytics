@@ -116,6 +116,86 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
                              kwargs={'emailid':id})
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
+            
+    # Check that the 'To:' field is resolved to the correct emails
+    def test_to_existingEmailAddress(self):
+        # A valid existing email address
+        self.create_users(1)
+        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-compose')
+            data = {'do_save':'', 'to':'trackee@example.com', 'message':'Message.'}
+            response = self.client.post(url, data)
+            
+            self.assertEquals(response.status_code, 302)
+            
+            qs = DraftEmail.objects.all()
+            self.assertEquals(qs.count(), 1)
+            draft = qs[0]
+            self.assertEquals(draft.pending_recipients.count(), 1)
+            self.assertEquals(draft.pending_recipients.all()[0].emailaddress, 
+                              'trackee@example.com')
+        
+    def test_to_existingUsername(self):
+        # A valid existing username
+        self.create_users(1)
+        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-compose')
+            data = {'do_save':'', 'to':'trackee', 'message':'Message.'}
+            response = self.client.post(url, data)
+            
+            self.assertEquals(response.status_code, 302)
+            
+            qs = DraftEmail.objects.all()
+            self.assertEquals(qs.count(), 1)
+            draft = qs[0]
+            self.assertEquals(draft.pending_recipients.count(), 1)
+            self.assertEquals(draft.pending_recipients.all()[0].username, 
+                              'trackee')
+                              
+    def test_to_nonExistentUsername(self):
+        # A valid but non-existent username
+        self.create_users(1)
+        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-compose')
+            data = {'do_save':'', 'to':'badtrackee', 'message':'Message.'}
+            response = self.client.post(url, data)
+            
+            self.assertEquals(response.status_code, 200)
+            
+            qs = DraftEmail.objects.all()
+            self.assertEquals(qs.count(), 1)
+            draft = qs[0]
+            self.assertEquals(draft.pending_recipients.count(), 0)
+    
+    def test_to_nonExistentEmailaddress(self):
+        # A valid but non-existent email
+        self.create_users(1)
+        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-compose')
+            data = {'do_save':'', 'to':'other@example.com', 'message':'Message.'}
+            response = self.client.post(url, data)
+            
+            self.assertEquals(response.status_code, 302)
+            
+            qs = DraftEmail.objects.all()
+            self.assertEquals(qs.count(), 1)
+            draft = qs[0]
+            self.assertEquals(draft.pending_recipients.count(), 1)
+            self.assertEquals(draft.pending_recipients.all()[0].emailaddress, 
+                              'other@example.com')
+    
+    # Hidden pixel
+    # Headers and Footers
+    # Save button
+    # Send button
     
 class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
@@ -124,6 +204,11 @@ class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
             url = urlreverse('linkanalytics-email-viewsent')
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
+            
+    # When no emails exist
+    # When an email is drafted, but not sent
+    # When an email was sent
+    # When multiple emails were sent
     
 class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
@@ -133,6 +218,11 @@ class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
             url = urlreverse('linkanalytics-email-viewdrafts')
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
+            
+    # When no emails exist
+    # When an email has been set (and should no longer be a draft)
+    # When one unsent email draft exists
+    # When multi unsent email drafts exist
     
 class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
@@ -147,6 +237,30 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
                              kwargs={'emailid': id})
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
+            
+            itemiter = response.context['items']
+            items = list(itemiter)
+            self.assertEquals(len(items), 0)
+            
+    # Check email read
+    # Check one email read and one not read
+    # Check multiple emails read
+            
+class ViewEmailUnread_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    pass
+    
+class CreateEmailContact_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    # Username is duplicate
+    # no email address given
+    # Valid name and email
+    # Save button
+    pass
+    
+class ViewEmailContacts_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    # No contacts
+    # One contact
+    # Multi contacts
+    pass
 
 #==============================================================================#
 # Target View tests:
