@@ -125,7 +125,8 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
-            data = {'do_save':'', 'to':'trackee@example.com', 'message':'Message.'}
+            data = {'do_save':'', 'to':'trackee@example.com', 
+                    'message':'Message.'}
             response = self.client.post(url, data)
             
             self.assertEquals(response.status_code, 302)
@@ -180,7 +181,8 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
-            data = {'do_save':'', 'to':'other@example.com', 'message':'Message.'}
+            data = {'do_save':'', 'to':'other@example.com', 
+                    'message':'Message.'}
             response = self.client.post(url, data)
             
             self.assertEquals(response.status_code, 302)
@@ -200,15 +202,56 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
 class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
+        # When no emails exist
+        self.create_users(1)
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-viewsent')
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
+            self.assertEquals(len(response.context['emails']), 0)
             
-    # When no emails exist
-    # When an email is drafted, but not sent
-    # When an email was sent
-    # When multiple emails were sent
+    def test_draftNotSent(self):
+        # When an email is drafted, but not sent
+        self.create_users(1)
+        e = DraftEmail()
+        e.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewsent')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            self.assertEquals(len(response.context['emails']), 0)
+    
+    def test_oneSent(self):
+        # When an email was sent
+        self.create_users(1)
+        u = self.new_trackedurl('trackedurl')
+        e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+        e.save()
+        id = e.pk
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewsent')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            self.assertEquals(len(response.context['emails']), 1)
+            self.assertEquals(response.context['emails'][0].pk, id)
+    
+    def test_multiSent(self):
+        # When multiple emails were sent
+        self.create_users(1)
+        def sendEmail():
+            u = self.new_trackedurl('trackedurl')
+            e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+            e.save()
+            return e.pk
+        ids = [sendEmail() for i in range(3)]
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewsent')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            self.assertEquals(len(response.context['emails']), 3)
+            pks = [response.context['emails'][i].pk for i in range(3)]
+            pks.sort()
+            self.assertEquals(ids, pks)
     
 class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
@@ -245,18 +288,59 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
     # Check email read
     # Check one email read and one not read
     # Check multiple emails read
+    # what if the given email id does not exist?
             
 class ViewEmailUnread_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    pass
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        u = self.new_trackedurl('trackedurl')
+        e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+        e.save()
+        id = e.pk
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewunread', 
+                             kwargs={'emailid':id})
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            
+    # what if the given email id does not exist?
     
 class CreateEmailContact_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-createcontact')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+    
+    def test_basic_editExisting(self):
+        # Very basic test... just see that url exists.
+        self.create_users(1)
+        t = Trackee(username='trackee', emailaddress='me@example.com')
+        t.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-editcontact', 
+                             kwargs={'username':'trackee'})
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            
+    # Edit existing but username doesn't exist
     # Username is duplicate
     # no email address given
     # Valid name and email
     # Save button
-    pass
     
 class ViewEmailContacts_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_basic(self):
+        # Very basic test... just see that url exists.
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewcontacts')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+    
     # No contacts
     # One contact
     # Multi contacts

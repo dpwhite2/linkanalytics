@@ -42,7 +42,7 @@ def accessTrackedUrl(request, uuid, tailpath):
     
     return response
     
-
+@login_required
 def createTrackedUrl(request):
     if request.method == 'POST': # If the form has been submitted...
         form = TrackedUrlDefaultForm(request.POST, instance=TrackedUrl())
@@ -56,7 +56,8 @@ def createTrackedUrl(request):
     return render_to_response('linkanalytics/create_trackedurl.html',
                              {'form': form, },
                               context_instance=RequestContext(request))
-    
+        
+@login_required
 def createTrackee(request):
     if request.method == 'POST': # If the form has been submitted...
         form = TrackeeForm(request.POST, instance=Trackee())
@@ -87,12 +88,14 @@ def _email_render_to_response(template, dictionary, context_instance):
     return render_to_response(template, dictionary, 
                               context_instance=context_instance)
 
-
+    
+@login_required
 def viewEmail(request):
     return _email_render_to_response('linkanalytics/email/email.html', {},
                               context_instance=RequestContext(request))
     
-    
+        
+@login_required
 def composeEmail(request, emailid=None):
     if request.method == 'POST': # If the form has been submitted...
         if emailid is not None: 
@@ -131,22 +134,26 @@ def composeEmail(request, emailid=None):
                               'contacts': contacts},
                              context_instance=RequestContext(request))
 
-
+    
+@login_required
 def viewSentEmails(request):
     return _email_render_to_response('linkanalytics/email/sent.html',
                              {'emails': Email.objects.all() },
                               context_instance=RequestContext(request))
-
+    
+@login_required
 def viewDraftEmails(request):
     return _email_render_to_response('linkanalytics/email/drafts.html',
                              {'drafts': DraftEmail.objects.filter(sent=False) },
                               context_instance=RequestContext(request))
-
+    
+@login_required
 def viewEmailContacts(request):
     return _email_render_to_response('linkanalytics/email/contacts.html',
                     { 'contacts': Trackee.objects.exclude(emailaddress='') },
                     context_instance=RequestContext(request))
-
+    
+@login_required
 def createEmailContact(request, username=None):
     if request.method == 'POST': # If the form has been submitted...
         if username is not None:
@@ -173,10 +180,12 @@ def createEmailContact(request, username=None):
                     { 'form': form },
                     context_instance=RequestContext(request))
 
-
+    
+@login_required
 def viewSingleSentEmail(request, emailid):
     return HttpResponse('View: Under Construction.')
-    
+        
+@login_required
 def viewEmailReadList(request, emailid):
     eml = Email.objects.get(pk=emailid)
     u = eml.trackedurl
@@ -192,7 +201,8 @@ def viewEmailReadList(request, emailid):
     return _email_render_to_response('linkanalytics/email/whoread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))
-    
+        
+@login_required
 def viewEmailUnreadList(request, emailid):
     eml = Email.objects.get(pk=emailid)
     u = eml.trackedurl
@@ -208,10 +218,12 @@ def viewEmailUnreadList(request, emailid):
     return _email_render_to_response('linkanalytics/email/whounread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))
-    
+        
+@login_required
 def viewEmailRecipientsList(request, emailid):
     return HttpResponse('View: Under Construction.')
-    
+        
+@login_required
 def viewSentEmailContent(request, emailid):
     return HttpResponse('View: Under Construction.')
 

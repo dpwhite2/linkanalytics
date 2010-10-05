@@ -19,7 +19,7 @@ urlpatterns = patterns('linkanalytics',
     (r'^email/create_contact/$', 'views.createEmailContact', 
                     {}, 'linkanalytics-email-createcontact'),
     (r'^email/create_contact/(?P<username>[-_\d\w]+)$', 'views.createEmailContact', 
-                    {}, 'linkanalytics-email-createcontact'),
+                    {}, 'linkanalytics-email-editcontact'),
     
     (r'^email/(?P<emailid>\d+)/$', 'views.viewSingleSentEmail', 
                     {}, 'linkanalytics-email-viewsingle'),
