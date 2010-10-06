@@ -5,10 +5,10 @@ from linkanalytics.tests import helpers
 
 #==============================================================================#
 # Test modules...
-from linkanalytics.tests import views, templatetags, models, email
+from linkanalytics.tests import views, templatetags, models, util, email
 
 # List of all test modules containing tests.  
-_testmodules = [views,templatetags,models,email]
+_testmodules = [views,templatetags,models,util,email]
 
 # Import all test cases so they appear in this module.  This appears to be 
 # needed for Hudson automated testing.

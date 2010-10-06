@@ -4,3 +4,5 @@ runserver
 runtests
 django-admin
 local_settings.py
+ladata.json
+TrackedUrl.json

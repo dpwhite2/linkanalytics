@@ -12,7 +12,7 @@
     {% for item in drafts %}
     <tr>
       <td>
-        <a href="{% url linkanalytics.views.composeEmail emailid=item.pk %}">{{item.subject}}</a>
+        <a href="{% url linkanalytics.email.views.composeEmail emailid=item.pk %}">{{item.subject}}</a>
       </td>
       <td>{{item.pending_recipients.count}}</td>
     </tr>

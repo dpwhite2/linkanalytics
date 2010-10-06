@@ -13,22 +13,22 @@
     {% for item in emails %}
     <tr>
       <td>
-        <a href="{% url linkanalytics.views.viewSingleSentEmail emailid=item.pk %}">{{item.subject}}</a>
+        <a href="{% url linkanalytics.email.views.viewSingleSentEmail emailid=item.pk %}">{{item.subject}}</a>
       </td>
       <td>
-        <a href="{% url linkanalytics.views.viewEmailReadList emailid=item.pk %}">read</a>
+        <a href="{% url linkanalytics.email.views.viewEmailReadList emailid=item.pk %}">read</a>
         ({{ item.read_count }})
       </td>
       <td>
-        <a href="{% url linkanalytics.views.viewEmailUnreadList emailid=item.pk %}">unread</a>
+        <a href="{% url linkanalytics.email.views.viewEmailUnreadList emailid=item.pk %}">unread</a>
         ({{ item.unread_count }})
       </td>
       <td>
-        <a href="{% url linkanalytics.views.viewEmailRecipientsList emailid=item.pk %}">all</a>
+        <a href="{% url linkanalytics.email.views.viewEmailRecipientsList emailid=item.pk %}">all</a>
         ({{ item.recipient_count }})
       </td>
       <td>
-        <a href="{% url linkanalytics.views.viewSentEmailContent emailid=item.pk %}">view</a>
+        <a href="{% url linkanalytics.email.views.viewSentEmailContent emailid=item.pk %}">view</a>
       </td>
     </tr>
     {% endfor %}

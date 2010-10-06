@@ -5,8 +5,8 @@ from django.db import IntegrityError
 from django.core import mail as django_email
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee, Email
-from linkanalytics.models import DraftEmail, TrackedUrlAccess
+from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
+from linkanalytics.models import TrackedUrlAccess, TargetValidator
 from linkanalytics import app_settings
 
 import helpers
@@ -43,6 +43,9 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(i.recent_access, None)
         self.assertEquals(i.access_count, 0)
         self.assertEquals(i.was_accessed(), False)
+        # without validators, it should accept any target
+        self.assertTrue(i.validate_target('abc/def.xyz'))
+        self.assertTrue(i.validate_target(''))
         
     def test_cancelled_access(self):
         # Cancel an access using the Accessed object returned by on_access()
@@ -105,6 +108,29 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(i1.first_access.date(), otherday.date())
         self.assertEquals(i1.access_count, 2)
         self.assertEquals(i1.was_accessed(), True)
+        
+    def test_validate_target(self):
+        from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
+        
+        u = TrackedUrl(name='Name1')
+        u.save()
+        
+        v1 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='abc/def.xyz')
+        v1.save()
+        v2 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='RST/def.xyz')
+        v2.save()
+        
+        t = Trackee(username='trackee1')
+        t.save()
+        
+        i = u.add_trackee(t)
+        self.assertTrue(i.validate_target('abc/def.xyz'))
+        self.assertTrue(i.validate_target('RST/def.xyz'))
+        self.assertFalse(i.validate_target('cba/def.xyz'))
+        self.assertFalse(i.validate_target(''))
+        self.assertFalse(i.validate_target('/'))
+        
+        
         
         
 #==============================================================================#
@@ -233,117 +259,64 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
 #==============================================================================#
 
-class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    # This class tests both the Email and DraftEmail classes
-    def test_compile_basic(self):
-        de = DraftEmail(fromemail='', subject='Subject')
-        html = '<html><head></head><body></body></html>'
-        de.message = html
-        de.save()
-        e = de._compile()
-        
-        self.assertEquals(e.subject, 'Subject')
-        self.assertEquals(e.txtmsg, '')
-        self.assertEqualsHtml(e.htmlmsg, html)
-        
-        # There's only one TrackedUrl object so far
-        self.assertEquals(TrackedUrl.objects.count(), 1)
-        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
-        
-    def test_send_basic(self):
-        """Sends an email to no one"""
-        de = DraftEmail(fromemail='', subject='Subject')
-        html = '<html><head></head><body></body></html>'
-        de.message = html
-        de.save()
-        e = de.send()
-        
-        self.assertTrue(de.sent)
-        self.assertEquals(e.subject, 'Subject')
-        self.assertEquals(e.txtmsg, '')
-        self.assertEqualsHtml(e.htmlmsg, html)
-        
-        # There's only one TrackedUrl object so far
-        self.assertEquals(TrackedUrl.objects.count(), 1)
-        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
-        
-    def test_send_single(self):
-        t = Trackee(username='user', emailaddress='user@example.com')
+def _targetvalidator_test_func(url):
+    return url=='abc/def.xyz'
+
+class TargetValidator_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_literalUrl(self):
+        from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
+        t = TrackedUrl(name='Tracked')
         t.save()
-        de = DraftEmail(fromemail='', subject='Subject')
-        html = '<html><head></head><body></body></html>'
-        de.message = html
-        de.save()
-        de.pending_recipients.add(t)
-        de.save()
-        e = de.send()
+        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_LITERAL, 
+                                value='abc/def.xyz')
+        v.save()
         
-        self.assertTrue(de.sent)
-        self.assertEquals(e.subject, 'Subject')
-        self.assertEquals(e.txtmsg, '')
-        self.assertEqualsHtml(e.htmlmsg, html)
+        self.assertTrue(v('abc/def.xyz'))
+        self.assertFalse(v(''))
+        self.assertFalse(v('abc/def.xy'))
+        self.assertFalse(v('bc/def.xyz'))
+        self.assertFalse(v('/'))
         
-        # There's only one TrackedUrl object so far
-        self.assertEquals(TrackedUrl.objects.count(), 1)
-        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
-        
-        self.assertEquals(len(django_email.outbox), 1)
-        self.assertEquals(django_email.outbox[0].subject, 'Subject')
-        self.assertEquals(django_email.outbox[0].recipients(), 
-                          ['user@example.com'])
-        
-    def test_send_pixelimage(self):
-        """Sends an email containing a pixelimage."""
-        t = Trackee(username='user', emailaddress='user@example.com')
+    def test_validatorRegex(self):
+        from linkanalytics.models import _VALIDATOR_TYPE_REGEX
+        t = TrackedUrl(name='Tracked')
         t.save()
-        html = '<html><head></head><body></body></html>'
-        de = DraftEmail(fromemail='', subject='Subject')
-        de.message = html
-        de.pixelimage = True
-        de.save()
-        de.pending_recipients.add(t)
-        de.save()
-        eml = de.send()
-        self.assertTrue(de.sent)
+        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_REGEX, 
+                                value=r'[abc]+/[def]+\.[xyz]+')
+        v.save()
         
-        qs = TrackedUrlInstance.objects.filter(trackee=t)
-        self.assertEquals(qs.count(), 1)
-        uuid = qs[0].uuid
+        self.assertTrue(v('abc/def.xyz'))
+        self.assertFalse(v(''))
+        self.assertTrue(v('abc/def.xy'))
+        self.assertTrue(v('5abc/def.xy'))
+        self.assertTrue(v('abc/def.xyz5'))
+        self.assertTrue(v('bc/def.xyz'))
+        self.assertFalse(v('/'))
         
-        self.assertEquals(len(django_email.outbox), 1)
-        msg = django_email.outbox[0]
-        content,mime = msg.alternatives[0]
-        self.assertEquals(mime, 'text/html')
-        ##print '\n{0}\n'.format(content)
-            
-        e = xml.etree.ElementTree.fromstring(content)
-        self.assertEquals(e.tag, 'html')
+        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_REGEX, 
+                                value=r'^[abc]+/[def]+\.[xyz]+$')
+        v.save()
         
-        body = e.find('body')
-        self.assertNotEquals(body, None)
+        self.assertTrue(v('abc/def.xyz'))
+        self.assertFalse(v(''))
+        self.assertTrue(v('abc/def.xy'))
+        self.assertFalse(v('5abc/def.xy'))
+        self.assertFalse(v('abc/def.xyz5'))
+        self.assertTrue(v('bc/def.xyz'))
+        self.assertFalse(v('/'))
+
+    def test_validatorFunction(self):
+        from linkanalytics.models import _VALIDATOR_TYPE_FUNC
+        t = TrackedUrl(name='Tracked')
+        t.save()
+        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_FUNC, 
+                value='linkanalytics.tests.models._targetvalidator_test_func')
+        v.save()
         
-        img = body.find('img')
-        self.assertNotEquals(img, None)
+        self.assertTrue(v('abc/def.xyz'))
+        self.assertFalse(v(''))
+        self.assertFalse(v('abc/def.xy'))
+        self.assertFalse(v('bc/def.xyz'))
+        self.assertFalse(v('/'))
         
-        src = img.get('src', default=None)
-        self.assertNotEquals(src, None)
-        
-        urltail = urlreverse( 'targetview-pixelpng', 
-                              urlconf='linkanalytics.targeturls')
-        urltail = urltail[1:] # remove leading '/'
-        url = urlreverse( 'linkanalytics-accessview', 
-                          kwargs={'uuid': uuid, 'tailpath':urltail})
-        
-        self.assertEquals(src, '{0}{1}'.format(app_settings.URLBASE, url))
-        
-    # check that DraftEmails cannot be sent more than once
-    # check that the same email cannot be sent to the same recipient more than 
-    #   once
-    # check that emails actually get sent
-    # check that each recipient has a different uuid
-    # check that EmailRecipients contains the new recipients of the email
-        
-        
-            
 #==============================================================================#
-    
