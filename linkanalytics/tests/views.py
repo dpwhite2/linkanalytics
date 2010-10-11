@@ -37,6 +37,34 @@ class AccessTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(len(response.redirect_chain),1)
         
 
+class AccessHashedTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    def test_hashValidation(self):
+        from linkanalytics.models import generate_hash
+        
+        u = self.new_trackedurl(name='Name1')
+        t = self.new_trackee(username='trackee1')
+        i = u.add_trackee(t)
+        
+        hash = generate_hash('/linkanalytics/nonexistent_url/')
+        url = helpers.urlreverse_hashredirect_local(i.uuid, hash=hash,
+                                              filepath='linkanalytics/testurl/')
+        # This does not pass the current validator
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 404)
+        
+        
+        urltail = urlreverse('redirect-local', 
+                             urlconf='linkanalytics.targeturls', 
+                             kwargs={'filepath':'linkanalytics/testurl/'})
+        hash = generate_hash(urltail)
+        url = helpers.urlreverse_hashredirect_local(i.uuid, hash=hash,
+                                              filepath='linkanalytics/testurl/')
+        # This now should pass the validator
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(len(response.redirect_chain),1)
+        
+
 class CreateTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
     pass
 

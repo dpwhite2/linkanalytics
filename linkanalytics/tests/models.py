@@ -258,6 +258,20 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         
 #==============================================================================#
+class GenerateHash_TestCase(base.LinkAnalytics_TestCaseBase):
+    def test_basic(self):
+        # A very simple test.  Only tests that the hash function exists and 
+        # returns the same hash value when given the same input.
+        
+        from linkanalytics.models import generate_hash
+        s = 'This is some data to be hashed.'
+        
+        a = generate_hash(s)
+        b = generate_hash(s)
+        
+        self.assertEquals(a,b)
+    
+#==============================================================================#
 
 def _targetvalidator_test_func(url):
     return url=='abc/def.xyz'

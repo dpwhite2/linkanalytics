@@ -2,12 +2,19 @@ from django import template
 import urlparse
 from django.core.urlresolvers import reverse as urlreverse
 
+from linkanalytics.models import generate_hash
+
 register = template.Library()
 
 
 def create_trackedurl_tag(trailpath):
     s = '{{% trackedurl {linkidvar} "{tp}" %}}'
-    return s.format(linkidvar='linkid',tp=trailpath)
+    return s.format(linkidvar='linkid', tp=trailpath)
+
+def create_trackedurlhash_tag(trailpath):
+    s = '{{% trackedurlhash {linkidvar} "{hash}" "{tp}" %}}'
+    hash = generate_hash(trailpath)
+    return s.format(linkidvar='linkid', hash=hash, tp=trailpath)
 
 class TrackNode(template.Node):
     pass
@@ -93,6 +100,7 @@ class TrackedurlNode(template.Node):
     
 
 def trackedurl(parser, token):
+    # TODO: token may contain two *or* three arguments
     try:
         tagname,linkid,trailpath = token.split_contents()
     except ValueError:

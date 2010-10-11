@@ -44,3 +44,6 @@ EMAIL_HEADERSDIR = getattr(settings, 'LINKANALYTICS_EMAIL_HEADERSDIR',
 EMAIL_FOOTERSDIR = getattr(settings, 'LINKANALYTICS_EMAIL_FOOTERSDIR', 
         os.path.join(ABSPATHBASE,'templates','linkanalytics','email','footers')
     )
+
+
+SECRET_KEY = getattr(settings, 'LINKANALYTICS_SECRET_KEY', settings.SECRET_KEY)

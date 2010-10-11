@@ -12,6 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
+from linkanalytics.models import generate_hash
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
@@ -43,6 +44,9 @@ _target_to_validate_convertors = {
     'r': _ttv_local,
     }
     
+# Get the string from the beginning up until the first slash, or if it begins 
+# with a slash, up until the second slash.  No slashes are included in the 
+# captured substring.
 _re_target_to_validate = re.compile(r'^/?(?P<start>[^/\s]+)(?:/.*)?$')
 
 def _get_target_to_validate(tailpath):
@@ -53,16 +57,41 @@ def _get_target_to_validate(tailpath):
 #==============================================================================#
 # Linkanalytics basic views
 
-def accessTrackedUrl(request, uuid, tailpath):    
-    tailpath = '/%s'%tailpath
+def accessTrackedUrl(request, uuid, tailpath):
+    if (not tailpath.startswith('/')):
+        tailpath = '/%s'%tailpath
     try:
         i = TrackedUrlInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
         raise Http404
     
     target_to_validate = _get_target_to_validate(tailpath)
-    
     if not i.validate_target(target_to_validate):
+        raise Http404
+    
+    url = request.build_absolute_uri()
+    
+    try:
+        viewfunc,args,kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
+        response = viewfunc(request, uuid, *args, **kwargs)
+        # record access only *after* viewfunc() returned
+        i.on_access(success=True, url=url)
+    except Exception as e:
+        i.on_access(success=False, url=url)
+        raise
+    
+    return response
+    
+def accessHashedTrackedUrl(request, hash, uuid, tailpath):
+    if (not tailpath.startswith('/')):
+        tailpath = '/%s'%tailpath
+    try:
+        i = TrackedUrlInstance.objects.get(uuid=uuid)
+    except ObjectDoesNotExist:
+        raise Http404
+    
+    newhash = generate_hash(tailpath)
+    if hash != newhash:
         raise Http404
     
     url = request.build_absolute_uri()

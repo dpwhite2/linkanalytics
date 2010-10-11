@@ -46,5 +46,13 @@ def urlreverse_targetview_pixelpng(uuid):
     return urlreverse('linkanalytics-accessview', 
                       kwargs={'uuid': uuid, 'tailpath':urltail})
     
+def urlreverse_hashredirect_local(uuid, hash, filepath):
+    urltail = urlreverse('redirect-local', 
+                         urlconf='linkanalytics.targeturls', 
+                         kwargs={'filepath':filepath})
+    urltail = urltail[1:] # remove leading '/'
+    return urlreverse('linkanalytics-accesshashedview', 
+                      kwargs={'hash': hash, 'uuid': uuid, 'tailpath':urltail})
+    
 #==============================================================================#
 

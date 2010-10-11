@@ -8,6 +8,8 @@ import uuid
 import datetime
 import itertools
 import re
+import hashlib
+import hmac
 
 from linkanalytics import app_settings
 
@@ -165,7 +167,23 @@ class TrackedUrl(models.Model):
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
         i.save()
         return i
+        
+    def add_validator(validator_type, value):
+        # does a validator with the given type and value already exist?
+        qs = self.targetvalidator_set.filter(type=validator_type, value=value)
+        if not qs.exists():
+            v = TargetValidator(trackedurl=self, type=validator_type, value=value)
+            v.save()
+        else:
+            v = qs[0]
+        return v
 
+
+def generate_hash(data):
+    """Generates a hash for the given string.  The return value is a string of 
+       hexadecimal digits.
+    """
+    return hmac.new(app_settings.SECRET_KEY, data, hashlib.sha1).hexdigest()
 
 def _create_uuid():
     """Returns a 32-character string containing a randomly-generated UUID."""
@@ -228,6 +246,8 @@ class TrackedUrlInstance(models.Model):
         if qs.exists():
             return any( v(url) for v in qs )
         else:
+            # Return True explicitly because any() on an empty sequence 
+            # returns False.
             return True
     
 
