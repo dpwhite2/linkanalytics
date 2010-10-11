@@ -1,9 +1,3 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-
-#from django.db.models import F
-
 import uuid
 import datetime
 import itertools
@@ -11,7 +5,16 @@ import re
 import hashlib
 import hmac
 
+from django.db import models
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.urlresolvers import reverse as urlreverse
+
+#from django.db.models import F
+
+
 from linkanalytics import app_settings
+from linkanalytics import urlex
 
 #==============================================================================#
 # These sub packages contain models.py files that must be imported at the end 
@@ -125,6 +128,17 @@ def resolve_emails(parts):
     return { 'trackees':trackees, 'unknown_emails':unknown_emails }
 
 
+def generate_hash(data):
+    """Generates a hash for the given string.  The return value is a string of 
+       hexadecimal digits.
+    """
+    return hmac.new(app_settings.SECRET_KEY, data, hashlib.sha1).hexdigest()
+
+def _create_uuid():
+    """Returns a 32-character string containing a randomly-generated UUID."""
+    return uuid.uuid4().hex
+
+
 class TrackedUrl(models.Model):
     """A group of urls whose accesses are tracked by LinkAnalytics.  The 
        TrackedUrl object is *not* the same as the physical URL which is 
@@ -136,6 +150,8 @@ class TrackedUrl(models.Model):
     name =      models.CharField(max_length=256)
     comments =  models.TextField(blank=True)
     trackees =  models.ManyToManyField(Trackee, through='TrackedUrlInstance')
+    secret_id = models.CharField(max_length=32, editable=False,
+                                 default=_create_uuid, unique=True)
 
     def __unicode__(self):
         """Returns a unicode representation of a TrackedUrl."""
@@ -177,17 +193,17 @@ class TrackedUrl(models.Model):
         else:
             v = qs[0]
         return v
-
-
-def generate_hash(data):
-    """Generates a hash for the given string.  The return value is a string of 
-       hexadecimal digits.
-    """
-    return hmac.new(app_settings.SECRET_KEY, data, hashlib.sha1).hexdigest()
-
-def _create_uuid():
-    """Returns a 32-character string containing a randomly-generated UUID."""
-    return uuid.uuid4().hex
+        
+    def generate_hash(self, data):
+        """ Generates a hash for the given string.  The SECRET_KEY and 
+            TrackedUrl's secret_id value are both used.  The returned value is 
+            a string of hexadecimal digits.
+        """
+        return generate_hash(data+self.secret_id)
+                        
+    def match_hash(self, hash, data):
+        newhash = self.generate_hash(data)
+        return hash==newhash
 
 
 class TrackedUrlInstance(models.Model):
@@ -249,6 +265,18 @@ class TrackedUrlInstance(models.Model):
             # Return True explicitly because any() on an empty sequence 
             # returns False.
             return True
+            
+    def generate_hashedurl(self, urltail):
+        if not urltail.startswith('/'):
+            urltail = '/%s'%urltail
+        hash = self.trackedurl.generate_hash(urltail)
+        return urlex.create_hashedurl(hash, self.uuid, urltail)
+            
+    def generate_hash(self, data):
+        return self.trackedurl.generate_hash(data)
+        
+    def match_hash(self, hash, data):
+        return self.trackedurl.match_hash(hash, data)
     
 
 class TrackedUrlAccess(models.Model):

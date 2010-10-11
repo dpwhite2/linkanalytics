@@ -7,7 +7,7 @@ import imghdr
 from django.core.urlresolvers import reverse as urlreverse
 
 from linkanalytics.models import TrackedUrlInstance, Trackee, TargetValidator
-from linkanalytics import targetviews
+from linkanalytics import targetviews, urlex
 import helpers
 import base
 
@@ -46,20 +46,14 @@ class AccessHashedTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         i = u.add_trackee(t)
         
         hash = generate_hash('/linkanalytics/nonexistent_url/')
-        url = helpers.urlreverse_hashredirect_local(i.uuid, hash=hash,
-                                              filepath='linkanalytics/testurl/')
-        # This does not pass the current validator
+        urltail = urlex.urltail_redirect_local('linkanalytics/testurl/')
+        url = urlex.create_hashedurl(hash, i.uuid, urltail)
+        # This should not pass the hash checker
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 404)
         
-        
-        urltail = urlreverse('redirect-local', 
-                             urlconf='linkanalytics.targeturls', 
-                             kwargs={'filepath':'linkanalytics/testurl/'})
-        hash = generate_hash(urltail)
-        url = helpers.urlreverse_hashredirect_local(i.uuid, hash=hash,
-                                              filepath='linkanalytics/testurl/')
-        # This now should pass the validator
+        url = urlex.hashedurl_redirect_local(i, 'linkanalytics/testurl/')
+        # This now should pass the hash checker
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 200)
         self.assertEquals(len(response.redirect_chain),1)

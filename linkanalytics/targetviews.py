@@ -17,6 +17,7 @@ import app_settings
 #    return HttpResponse('Target view: TXT.  Under Construction')
 
 
+#==============================================================================#
 def targetview_html(request, uuid, filepath=None):
     if not filepath:
         filepath = 'default.html'
@@ -63,6 +64,6 @@ def targetview_pixelpng(request, uuid):
     with open(fname, 'rb') as f:
         return HttpResponse(f.read(), mimetype='image/png')
         
-    
+#==============================================================================#
 
 

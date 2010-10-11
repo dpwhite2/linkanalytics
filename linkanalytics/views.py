@@ -58,7 +58,7 @@ def _get_target_to_validate(tailpath):
 # Linkanalytics basic views
 
 def accessTrackedUrl(request, uuid, tailpath):
-    if (not tailpath.startswith('/')):
+    if not tailpath.startswith('/'):
         tailpath = '/%s'%tailpath
     try:
         i = TrackedUrlInstance.objects.get(uuid=uuid)
@@ -83,15 +83,14 @@ def accessTrackedUrl(request, uuid, tailpath):
     return response
     
 def accessHashedTrackedUrl(request, hash, uuid, tailpath):
-    if (not tailpath.startswith('/')):
+    if not tailpath.startswith('/'):
         tailpath = '/%s'%tailpath
     try:
         i = TrackedUrlInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
         raise Http404
     
-    newhash = generate_hash(tailpath)
-    if hash != newhash:
+    if not i.match_hash(hash, tailpath):
         raise Http404
     
     url = request.build_absolute_uri()
