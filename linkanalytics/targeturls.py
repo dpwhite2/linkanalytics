@@ -9,6 +9,7 @@ PATH = r'(?P<filepath>[-\w\d_./]+)'
 # Domain: (SLD.)+ TLD (:port)?    -- TLD is .com, .org, .uk, etc
 DOMAIN = r'(?P<domain>([-\w\d]+\.)+[-\w\d]+(:\d+)?)'
 
+#==============================================================================#
 urlpatterns = patterns('linkanalytics',
     # FILEPATH in http and https is optional.
     (r'^http/'+DOMAIN+r'(?:/'+PATH+r')?/?$', 'targetviews.targetview_redirect', 
@@ -24,3 +25,4 @@ urlpatterns = patterns('linkanalytics',
     (r'^ppx/?$', 'targetviews.targetview_pixelpng', {}, 'targetview-pixelpng'),
 )
 
+#==============================================================================#

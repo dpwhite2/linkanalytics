@@ -38,10 +38,11 @@ class TrackUrlNode(TrackNode):
 
 class TrackPixelNode(TrackNode):
     def __init__(self, type):
+        TrackNode.__init__(self)
         trailpath = 'gpx'
-        if type=='gif':
+        if type == 'gif':
             trailpath = 'gpx'
-        elif type=='png':
+        elif type == 'png':
             trailpath = 'ppx'
         self.text = create_trackedurl_tag(trailpath)
     def render(self, context):
@@ -53,7 +54,7 @@ class TrackPixelNode(TrackNode):
 
 def track(parser, token):
     try:
-        tagname,category,arg = token.split_contents()
+        tagname, category, arg = token.split_contents()
     except ValueError:
         msg = "%r tag requires two arguments" % token.contents.split()[0]
         raise template.TemplateSyntaxError(msg)
@@ -67,22 +68,23 @@ def track(parser, token):
     category = category[1:-1]
     arg = arg[1:-1]
     
-    if category=='trail':
+    if category == 'trail':
         return TrackTrailNode(arg)
-    elif category=='url':
+    elif category == 'url':
         return TrackUrlNode(arg)
-    elif category=='pixel':
+    elif category == 'pixel':
         return TrackPixelNode(arg)
     else:
         fmt = (tagname, category)
         msg = "%r tag's first argument, '%s', was not recognized" % fmt
         raise template.TemplateSyntaxError(msg)
 
-register.tag('track',track)
+register.tag('track', track)
     
     
 class TrackedurlNode(template.Node):
     def __init__(self, linkid, trailpath):
+        template.Node.__init__(self)
         self.urlbase = template.Variable('urlbase')
         self.linkid = template.Variable(linkid)
         self.trailpath = trailpath
@@ -95,14 +97,14 @@ class TrackedurlNode(template.Node):
                             kwargs={'uuid': linkid, 'tailpath':self.trailpath}
                             )
             return '{base}{p}'.format(base=urlbase, p=urlpart)
-        except Exception as e:
+        except Exception:
             return ''
     
 
 def trackedurl(parser, token):
     # TODO: token may contain two *or* three arguments
     try:
-        tagname,linkid,trailpath = token.split_contents()
+        tagname, linkid, trailpath = token.split_contents()
     except ValueError:
         msg = "%r tag requires two arguments" % token.contents.split()[0]
         raise template.TemplateSyntaxError(msg)

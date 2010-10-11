@@ -64,7 +64,7 @@ class Trackee(models.Model):
 
     def __unicode__(self):
         """Returns a unicode representation of a Trackee."""
-        return u'%s'%self.username
+        return u'%s' % self.username
 
     def url_instances(self):
         """A QuerySet of all TrackedUrlInstances which link to this Trackee."""
@@ -87,13 +87,13 @@ class Trackee(models.Model):
     @staticmethod
     def from_email(email, comments=""):
         """Create a Trackee from the given email address."""
-        basename = _re_email_username_replace.sub('_',email)
+        basename = _re_email_username_replace.sub('_', email)
         name = basename
         i = 0
         # Append integer until username is unique.
         while Trackee.objects.filter(username=name).exists():
-            name = '{0}{1}'.format(basename,i)
-            i+=1
+            name = '{0}{1}'.format(basename, i)
+            i += 1
         return Trackee( username=       name,
                         emailaddress=   email,
                         comments=       comments )
@@ -155,7 +155,7 @@ class TrackedUrl(models.Model):
 
     def __unicode__(self):
         """Returns a unicode representation of a TrackedUrl."""
-        return u'%s'%self.name
+        return u'%s' % self.name
 
     def url_instances(self):
         """A QuerySet of all TrackedUrlInstances associated with this 
@@ -184,11 +184,12 @@ class TrackedUrl(models.Model):
         i.save()
         return i
         
-    def add_validator(validator_type, value):
+    def add_validator(self, validator_type, value):
         # does a validator with the given type and value already exist?
         qs = self.targetvalidator_set.filter(type=validator_type, value=value)
         if not qs.exists():
-            v = TargetValidator(trackedurl=self, type=validator_type, value=value)
+            v = TargetValidator(trackedurl=self, type=validator_type, 
+                                value=value)
             v.save()
         else:
             v = qs[0]
@@ -203,7 +204,7 @@ class TrackedUrl(models.Model):
                         
     def match_hash(self, hash, data):
         newhash = self.generate_hash(data)
-        return hash==newhash
+        return hash == newhash
 
 
 class TrackedUrlInstance(models.Model):
@@ -220,7 +221,7 @@ class TrackedUrlInstance(models.Model):
 
     def __unicode__(self):
         """Returns a unicode representation of a TrackedUrlInstance."""
-        return u'%s, %s'%(self.trackedurl, self.trackee)
+        return u'%s, %s' % (self.trackedurl, self.trackee)
 
     def was_accessed(self):
         """Returns True if this TrackedUrlInstance has been accessed; returns 
@@ -268,7 +269,7 @@ class TrackedUrlInstance(models.Model):
             
     def generate_hashedurl(self, urltail):
         if not urltail.startswith('/'):
-            urltail = '/%s'%urltail
+            urltail = '/%s' % urltail
         hash = self.trackedurl.generate_hash(urltail)
         return urlex.create_hashedurl(hash, self.uuid, urltail)
             
@@ -316,18 +317,18 @@ class TargetValidator(models.Model):
     value =      models.CharField(max_length=3000)
     
     def __call__(self, url):
-        if self.type==_VALIDATOR_TYPE_LITERAL:
-            if url==self.value:
+        if self.type == _VALIDATOR_TYPE_LITERAL:
+            if url == self.value:
                 return True
-        elif self.type==_VALIDATOR_TYPE_REGEX:
+        elif self.type == _VALIDATOR_TYPE_REGEX:
             r = _get_targetvalidator_regex(self.value)
             if r.search(url):
                 return True
-        elif self.type==_VALIDATOR_TYPE_FUNC:
-            mname,dot,fname = self.value.rpartition('.')
+        elif self.type == _VALIDATOR_TYPE_FUNC:
+            mname, dot, fname = self.value.rpartition('.')
             # do not catch ImportError here, let it go for debugging purposes
             m = __import__(mname, fromlist=[fname])
-            return getattr(m,fname)(url)
+            return getattr(m, fname)(url)
         return False
 
 #==============================================================================#

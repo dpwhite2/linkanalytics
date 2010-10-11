@@ -1,4 +1,4 @@
-import re
+
 
 from django.template import Template, Context
 
@@ -17,6 +17,7 @@ class EmailContent(object):
         
 class HtmlEmailContent(EmailContent):
     def __init__(self, data):
+        super(HtmlEmailContent,self).__init__()
         self.html = HtmlDocument(data)
     def compile(self):
         r = self.process_template(self.docify())
@@ -44,6 +45,7 @@ class HtmlEmailContent(EmailContent):
     
 class TextEmailContent(EmailContent):
     def __init__(self, text):
+        super(TextEmailContent,self).__init__()
         self.text = text
     def compile(self):
         r = self.process_template(self.text)
@@ -62,26 +64,26 @@ def _html_to_text(html, full_document=True):
 
 def compile_email(content, **kwargs):
     """Default content_type is html."""
-    content_type = kwargs.get('content_type','html').lower()
-    html_header = kwargs.get('html_header','')
-    html_footer = kwargs.get('html_footer','')
-    text_header = kwargs.get('text_header',None)
-    text_footer = kwargs.get('text_footer',None)
-    pixelimage_type = kwargs.get('pixelimage_type',None)
+    content_type = kwargs.get('content_type', 'html').lower()
+    html_header = kwargs.get('html_header', '')
+    html_footer = kwargs.get('html_footer', '')
+    text_header = kwargs.get('text_header', None)
+    text_footer = kwargs.get('text_footer', None)
+    pixelimage_type = kwargs.get('pixelimage_type', None)
     
     if text_header is None:
         text_header = _html_to_text(html_header, full_document=False)
     if text_footer is None:
         text_footer = _html_to_text(html_footer, full_document=False)
     
-    if content_type=='html':
+    if content_type == 'html':
         html = content
         text = _html_to_text(HtmlDocument(html).assemble())
-    elif content_type=='txt' or content_type=='text':
+    elif content_type == 'txt' or content_type=='text':
         raise RuntimeError('Compiling email from text is not yet implemented.')
     html = compile_html_email(html, html_header, html_footer, pixelimage_type)
     text = compile_text_email(text, text_header, text_footer)
-    return (text,html)
+    return (text, html)
     
 def compile_html_email(content, header='', footer='', pixelimage_type=None):
     html = HtmlEmailContent(content)
@@ -109,7 +111,7 @@ def email_instantiator(texttpl, htmltpl, urlbase):
     
     def _instantiate_email(uuid):
         ctx['linkid'] = uuid
-        return (ttext.render(ctx),thtml.render(ctx))
+        return (ttext.render(ctx), thtml.render(ctx))
         
     return _instantiate_email
     

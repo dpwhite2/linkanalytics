@@ -3,22 +3,15 @@ import os.path
 from django.shortcuts import render_to_response, redirect
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext
-from django.contrib.sites.models import Site
 
 from django.template import TemplateDoesNotExist
 
-import app_settings
-
-
-#def view_unknown(request, uuid, targetname, arg):
-#    return HttpResponse('Target view: UNKNOWN.  Under Construction')
-
-#def view_txt(request, uuid, targetname, arg):
-#    return HttpResponse('Target view: TXT.  Under Construction')
+from linkanalytics import app_settings
 
 
 #==============================================================================#
 def targetview_html(request, uuid, filepath=None):
+    """Renders a given HTML file."""
     if not filepath:
         filepath = 'default.html'
     return render_to_response('linkanalytics/targetviews/%s'%filepath,
@@ -56,10 +49,12 @@ def targetview_redirect(request, uuid, scheme=None, domain=None, filepath=None):
     return response
 
 def targetview_pixelgif(request, uuid):
+    """Returns a response to a one-pixel transparent GIF image."""
     msg = 'Target view: targetview_pixelgif().  Under Construction'
     return HttpResponse(msg)
     
 def targetview_pixelpng(request, uuid):
+    """Returns a response to a one-pixel transparent PNG image."""
     fname = os.path.join(app_settings.PIXEL_IMGDIR,'blank.png')
     with open(fname, 'rb') as f:
         return HttpResponse(f.read(), mimetype='image/png')

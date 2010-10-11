@@ -2,7 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import resolve, Resolver404, reverse as urlreverse
+from django.core.urlresolvers import reverse as urlreverse
 
 from linkanalytics.models import Trackee, resolve_emails
 from linkanalytics.email.models import Email, DraftEmail

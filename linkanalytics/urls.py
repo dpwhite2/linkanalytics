@@ -7,6 +7,7 @@ _UUID = r'(?P<uuid>[a-f0-9]{32})'
 # lower bound is given.
 _HASH = r'(?P<hash>[a-f0-9]{32,})'
 
+#==============================================================================#
 urlpatterns = patterns('linkanalytics',
     
     (r'^email/', include('linkanalytics.email.urls')),
@@ -21,3 +22,6 @@ urlpatterns = patterns('linkanalytics',
     (r'^access/j/'+_HASH+r'/'+_UUID+r'/'+_TAILPATH+r'$', 
         'views.accessHashedTrackedUrl', {}, 'linkanalytics-accesshashedview'),
 )
+
+#==============================================================================#
+

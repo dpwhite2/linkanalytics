@@ -31,9 +31,12 @@ class ToEmailField(forms.Field):
                 try:
                     t = Trackee.objects.get(username=part)
                 except ObjectDoesNotExist:
-                    raise forms.ValidationError('Recipient {0} was not found.'.format(part))
+                    msg = 'Recipient {0} was not found.'.format(part)
+                    raise forms.ValidationError(msg)
                 if t.emailaddress == '':
-                    raise forms.ValidationError('Recipient {0} does not have an email address.'.format(t.username))
+                    msg = 'Recipient {0} does not have ' + \
+                          'an email address.'.format(t.username)
+                    raise forms.ValidationError(msg)
             else:
                 validate_email(part)
 
@@ -47,10 +50,11 @@ class ComposeEmailForm(forms.ModelForm):
         exclude = ['sent', 'pending_recipients']
         
     def __init__(self, *args, **kwargs):
-        super(ComposeEmailForm,self).__init__(*args,**kwargs)
+        super(ComposeEmailForm, self).__init__(*args, **kwargs)
         # populate the initial values of 'to'
         if 'instance' in kwargs:
-            recs = ', '.join(r.username for r in self.instance.pending_recipients.all())
+            recs = ', '.join(r.username for r in 
+                             self.instance.pending_recipients.all())
             self.fields['to'].initial = recs
         if self.instance.sent:
             boundfields = self.visible_fields()
@@ -60,7 +64,7 @@ class ComposeEmailForm(forms.ModelForm):
     def save(self, *args, **kwargs):
         # disallow modifications if already sent
         if not self.instance.sent:
-            return super(ComposeEmailForm,self).save(*args,**kwargs)
+            return super(ComposeEmailForm, self).save(*args, **kwargs)
         else:
             return DraftEmail.objects.get(pk=self.instance.pk)
         

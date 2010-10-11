@@ -3,7 +3,8 @@ import htmlentitydefs
 import codecs
 import functools
 
-# Purpose: to convert an HTML document intended for email content into plain text.
+# Purpose: to convert an HTML document intended for email content into plain 
+#          text.
 
 class HTMLtoText(HTMLParser):
     def __init__(self, full_document=True):
@@ -63,12 +64,12 @@ class HTMLtoText(HTMLParser):
         self.handlers.get(tag, (self._donothing_starttag,))[0](attrs)
 
     def handle_endtag(self, tag):
-        self.handlers.get(tag, (None,self._donothing_endtag))[1]()
+        self.handlers.get(tag, (None, self._donothing_endtag))[1]()
         
     def handle_entityref(self, name):
         cp = htmlentitydefs.name2codepoint[name]
         u = unichr(cp)
-        self.buf += codecs.iterencode(u,'utf-8')
+        self.buf += codecs.iterencode(u, 'utf-8')
         
     def handle_charref(self, name):
         if name.startswith('x') or name.startswith('X'):

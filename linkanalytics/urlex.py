@@ -54,7 +54,7 @@ def hashedurl_pixelpng(trackedurl_instance):
 #==============================================================================#
 def create_hashedurl(hash, uuid, urltail):
     if not urltail.startswith('/'):
-        urltail = '/%s'%urltail
+        urltail = '/%s' % urltail
     kwargs = { 'hash': hash, 'uuid': uuid, 'tailpath': urltail }
     return urlreverse('linkanalytics-accesshashedview', kwargs=kwargs)
 

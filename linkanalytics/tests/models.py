@@ -1,13 +1,9 @@
 import datetime
-import xml.etree.ElementTree
 
 from django.db import IntegrityError
-from django.core import mail as django_email
-from django.core.urlresolvers import reverse as urlreverse
 
 from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
 from linkanalytics.models import TrackedUrlAccess, TargetValidator
-from linkanalytics import app_settings
 
 import helpers
 import base
@@ -24,7 +20,7 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t1 = Trackee(username='trackee1')
         t1.save()
         
-        i1 = u1.add_trackee(t1)
+        u1.add_trackee(t1)
         # Should not be able to save item with same TrackedUrl and Trackee.
         self.assertRaises(IntegrityError, u1.add_trackee, t1)  # t1 is passed
                                                                # to add_trackee
@@ -115,9 +111,11 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         u = TrackedUrl(name='Name1')
         u.save()
         
-        v1 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='abc/def.xyz')
+        v1 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
+                             value='abc/def.xyz')
         v1.save()
-        v2 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='RST/def.xyz')
+        v2 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
+                             value='RST/def.xyz')
         v2.save()
         
         t = Trackee(username='trackee1')
@@ -152,8 +150,8 @@ class Trackee_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t1.save()
         t2 = Trackee(username='trackee2')
         t2.save()
-        i1 = u1.add_trackee(t1)
-        i2 = u1.add_trackee(t2)
+        u1.add_trackee(t1)
+        u1.add_trackee(t2)
         
         self.assertEquals(t1.urls().count(), 1)
         self.assertEquals(t1.urls()[0], u1)
@@ -177,7 +175,7 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         # Merely create a Trackee should not associate it with a TrackedUrl
         self.assertEquals(u1.trackees.exists(), False)
         
-        i1 = u1.add_trackee(t1)
+        u1.add_trackee(t1)
         
         # ...But once added, the Trackee should be found in the trackees 
         # attribute.
@@ -189,7 +187,7 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         u2.save()
         t2 = Trackee(username='trackee2')
         t2.save()
-        i2 = u2.add_trackee(t1)
+        u2.add_trackee(t1)
         
         # TrackeUrls and Trackees should not affect other TrackedUrls
         self.assertEquals(u1.trackees.count(), 1)
@@ -197,7 +195,7 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(u2.trackees.count(), 1)
         self.assertEquals(u2.trackees.all()[0], t1)
         
-        i2b = u1.add_trackee(t2)
+        u1.add_trackee(t2)
         
         # Check that a second Trackee was added (assumes Trackees in 
         # trackees.all() appear in the same order in which they were added.)
@@ -229,7 +227,7 @@ class TrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         u2 = TrackedUrl(name='Name2')
         u2.save()
         
-        i2 = u2.add_trackee(t1)
+        u2.add_trackee(t1)
         
         # A Trackee may be associated with more than one TrackedUrl, but any 
         # such TrackedUrls should have separate url_instances.
@@ -269,12 +267,12 @@ class GenerateHash_TestCase(base.LinkAnalytics_TestCaseBase):
         a = generate_hash(s)
         b = generate_hash(s)
         
-        self.assertEquals(a,b)
+        self.assertEquals(a, b)
     
 #==============================================================================#
 
 def _targetvalidator_test_func(url):
-    return url=='abc/def.xyz'
+    return url == 'abc/def.xyz'
 
 class TargetValidator_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_literalUrl(self):

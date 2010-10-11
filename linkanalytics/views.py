@@ -1,6 +1,6 @@
-import datetime
-import sys
-import traceback
+
+
+
 import re
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
-from linkanalytics.models import generate_hash
+#from linkanalytics.models import generate_hash
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
@@ -52,14 +52,14 @@ _re_target_to_validate = re.compile(r'^/?(?P<start>[^/\s]+)(?:/.*)?$')
 def _get_target_to_validate(tailpath):
     m = _re_target_to_validate.match(tailpath)
     start = m.group('start')  if m else  tailpath
-    return _target_to_validate_convertors.get(start,_donothing)(tailpath)
+    return _target_to_validate_convertors.get(start, _donothing)(tailpath)
 
 #==============================================================================#
 # Linkanalytics basic views
 
 def accessTrackedUrl(request, uuid, tailpath):
     if not tailpath.startswith('/'):
-        tailpath = '/%s'%tailpath
+        tailpath = '/%s' % tailpath
     try:
         i = TrackedUrlInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
@@ -72,11 +72,11 @@ def accessTrackedUrl(request, uuid, tailpath):
     url = request.build_absolute_uri()
     
     try:
-        viewfunc,args,kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
+        viewfunc, args, kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
         response = viewfunc(request, uuid, *args, **kwargs)
         # record access only *after* viewfunc() returned
         i.on_access(success=True, url=url)
-    except Exception as e:
+    except Exception:
         i.on_access(success=False, url=url)
         raise
     
@@ -84,7 +84,7 @@ def accessTrackedUrl(request, uuid, tailpath):
     
 def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     if not tailpath.startswith('/'):
-        tailpath = '/%s'%tailpath
+        tailpath = '/%s' % tailpath
     try:
         i = TrackedUrlInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
@@ -96,11 +96,11 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     url = request.build_absolute_uri()
     
     try:
-        viewfunc,args,kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
+        viewfunc, args, kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
         response = viewfunc(request, uuid, *args, **kwargs)
         # record access only *after* viewfunc() returned
         i.on_access(success=True, url=url)
-    except Exception as e:
+    except Exception:
         i.on_access(success=False, url=url)
         raise
     

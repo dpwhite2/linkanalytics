@@ -42,8 +42,8 @@ class LinkAnalytics_TestCaseBase(TestCase):
         bb = _re_adjacenttags.sub(r'\1 ', b).strip()
         aa = _re_whitespace.sub(' ', aa)
         bb = _re_whitespace.sub(' ', bb)
-        msg = '"{0}" != "{1}"'.format(a,b)
-        msg += '\n\nmodified strings:\n"{0}" != "{1}"'.format(aa,bb)
+        msg = '"{0}" != "{1}"'.format(a, b)
+        msg += '\n\nmodified strings:\n"{0}" != "{1}"'.format(aa, bb)
         self.assertTrue(aa==bb, msg)
     
 class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
@@ -100,8 +100,9 @@ def autogenerate_testsuite(globals):
     """
     test_suite = unittest.TestSuite()
     loader = unittest.TestLoader()
-    for name,val in globals.iteritems():
-        if name.endswith('_TestCase') and issubclass(val, LinkAnalytics_TestCaseBase):
+    for name, val in globals.iteritems():
+        if name.endswith('_TestCase') and \
+           issubclass(val, LinkAnalytics_TestCaseBase):
             test_suite.addTest(loader.loadTestsFromTestCase(val))
     return test_suite
     

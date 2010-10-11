@@ -69,9 +69,9 @@ class Email(models.Model):
             i = TrackedUrlInstance(trackedurl=self.trackedurl, 
                                    trackee=recipient)
             i.save()
-            text,html = einstantiator(i.uuid)
+            text, html = einstantiator(i.uuid)
             
-            msg = self._create_multipart_email(text,html,recipient,cx)
+            msg = self._create_multipart_email(text, html, recipient, cx)
             msgs.append((msg, i, recipient,))
         
         rs = []  # recipients to whom the email was sent
@@ -80,7 +80,7 @@ class Email(models.Model):
         # Send the emails
         cx.open()
         try:
-            for msg,i,rec in msgs:
+            for msg, i, rec in msgs:
                 msg.send()
                 i.notified = today
                 i.save()
@@ -142,11 +142,11 @@ class DraftEmail(models.Model):
     def __unicode__(self):
         """Returns a unicode representation of a DraftEmail."""
         n = self.pending_recipients.count()
-        lim = min(n,5)
+        lim = min(n, 5)
         rec = u','.join(unicode(a) for a in self.pending_recipients.all()[:lim])
-        if n>=5:
+        if n >= 5:
             rec += u',...'
-        elif n==0:
+        elif n == 0:
             rec = u'[none]'
         sent = ''
         if self.sent:
@@ -189,7 +189,7 @@ class DraftEmail(models.Model):
         """
         if not self.subject:
             self.subject = '[No Subject]'
-        text,html = _email.compile_email(self.message, **kwargs)
+        text, html = _email.compile_email(self.message, **kwargs)
         u = _create_trackedurl_for_email()
         email_model = Email( fromemail=self.fromemail, trackedurl=u,
                              subject=self.subject, txtmsg=text, htmlmsg=html )

@@ -19,7 +19,8 @@ class AccessTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
         
         u = self.new_trackedurl(name='Name1')
-        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='/linkanalytics/nonexistent_url/')
+        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
+                            value='/linkanalytics/nonexistent_url/')
         v.save()        
         t = self.new_trackee(username='trackee1')
         i = u.add_trackee(t)
@@ -29,7 +30,8 @@ class AccessTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 404)
         
-        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='/linkanalytics/testurl/')
+        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
+                            value='/linkanalytics/testurl/')
         v.save()
         # This now should pass the validator
         response = self.client.get(url, follow=True)
@@ -84,7 +86,7 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
         
-        self.assertEquals(len(chain),1)
+        self.assertEquals(len(chain), 1)
         self.assertEquals(chain[0],
                           (u'http://testserver/linkanalytics/testurl/',302))
         
@@ -117,8 +119,8 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
         
-        self.assertEquals(len(chain),1)
-        self.assertEquals(chain[0],(u'http://www.google.com/',302))
+        self.assertEquals(len(chain), 1)
+        self.assertEquals(chain[0], (u'http://www.google.com/', 302))
         
         # reload the instance so its fields represent its current state
         i = TrackedUrlInstance.objects.filter(uuid=i.uuid)[0]
@@ -156,7 +158,7 @@ class ViewPixelPng_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(response.status_code, 200)
         # In imghdr.what(), the first arg (the filename) is ignored when the 
         # 'h' arg (a byte stream) is given.
-        self.assertEquals(imghdr.what('',h=response.content), 'png')
+        self.assertEquals(imghdr.what('', h=response.content), 'png')
 
 
 #==============================================================================#

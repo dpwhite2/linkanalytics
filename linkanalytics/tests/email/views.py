@@ -1,8 +1,6 @@
 """
     Tests for normal views as well as targetviews.
 """
-import datetime
-import imghdr
 
 from django.core.urlresolvers import reverse as urlreverse
 
@@ -109,7 +107,7 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_to_existingEmailAddress(self):
         # A valid existing email address
         self.create_users(1)
-        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t = Trackee(username='trackee', emailaddress='trackee@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
@@ -129,7 +127,7 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_to_existingUsername(self):
         # A valid existing username
         self.create_users(1)
-        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t = Trackee(username='trackee', emailaddress='trackee@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
@@ -148,7 +146,7 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_to_nonExistentUsername(self):
         # A valid but non-existent username
         self.create_users(1)
-        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t = Trackee(username='trackee', emailaddress='trackee@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
@@ -165,7 +163,7 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_to_nonExistentEmailaddress(self):
         # A valid but non-existent email
         self.create_users(1)
-        t = Trackee(username='trackee',emailaddress='trackee@example.com')
+        t = Trackee(username='trackee', emailaddress='trackee@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
@@ -332,6 +330,5 @@ class ViewEmailContacts_TestCase(base.LinkAnalytics_DBTestCaseBase):
     # No contacts
     # One contact
     # Multi contacts
-    pass
 
 #==============================================================================#
