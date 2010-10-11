@@ -6,7 +6,7 @@ import imghdr
 
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedUrlInstance, Trackee
+from linkanalytics.models import TrackedUrlInstance, Trackee, TargetValidator
 from linkanalytics import targetviews
 import helpers
 import base
@@ -15,7 +15,27 @@ import base
 # View tests:
 
 class AccessTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    pass
+    def test_targetValidation(self):
+        from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
+        
+        u = self.new_trackedurl(name='Name1')
+        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='/linkanalytics/nonexistent_url/')
+        v.save()        
+        t = self.new_trackee(username='trackee1')
+        i = u.add_trackee(t)
+        url = helpers.urlreverse_redirect_local(i.uuid, 
+                                              filepath='linkanalytics/testurl/')
+        # This does not pass the current validator
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 404)
+        
+        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, value='/linkanalytics/testurl/')
+        v.save()
+        # This now should pass the validator
+        response = self.client.get(url, follow=True)
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(len(response.redirect_chain),1)
+        
 
 class CreateTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
     pass

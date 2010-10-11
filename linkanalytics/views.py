@@ -1,3 +1,8 @@
+import datetime
+import sys
+import traceback
+import re
+
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -11,10 +16,6 @@ from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
 
-import datetime
-import sys
-import traceback
-
 
 # this should be a configurable setting?
 _TARGETURLCONF = "linkanalytics.targeturls"
@@ -24,13 +25,16 @@ def _donothing(tailpath):
     return tailpath
     
 def _ttv_http(tailpath):
+    # tailpath begins '/http'
     return 'http://'+tailpath[5:]
     
 def _ttv_https(tailpath):
+    # tailpath begins '/https'
     return 'https://'+tailpath[6:]
     
 def _ttv_local(tailpath):
-    return tailpath[1:]
+    # tailpath begins '/r' or '/h'
+    return tailpath[2:]
     
 _target_to_validate_convertors = {
     'http': _ttv_http,
@@ -38,9 +42,12 @@ _target_to_validate_convertors = {
     'h': _ttv_local,
     'r': _ttv_local,
     }
+    
+_re_target_to_validate = re.compile(r'^/?(?P<start>[^/\s]+)(?:/.*)?$')
 
 def _get_target_to_validate(tailpath):
-    start = tailpath.partition('/')[0]
+    m = _re_target_to_validate.match(tailpath)
+    start = m.group('start')  if m else  tailpath
     return _target_to_validate_convertors.get(start,_donothing)(tailpath)
 
 #==============================================================================#

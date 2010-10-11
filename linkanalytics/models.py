@@ -61,14 +61,12 @@ class Trackee(models.Model):
         """Returns a unicode representation of a Trackee."""
         return u'%s'%self.username
 
-    # pylint: disable=E1101
     def url_instances(self):
         """A QuerySet of all TrackedUrlInstances which link to this Trackee."""
         return self.trackedurlinstance_set.all()
     def urls(self):
         """A QuerySet of all TrackedUrls which link to this Trackee."""
         return self.trackedurl_set.all()
-    # pylint: enable=E1101
     
     @staticmethod
     def from_django_user(djuser, comments=""):
@@ -141,7 +139,6 @@ class TrackedUrl(models.Model):
         """Returns a unicode representation of a TrackedUrl."""
         return u'%s'%self.name
 
-    # pylint: disable-msg=E1101
     def url_instances(self):
         """A QuerySet of all TrackedUrlInstances associated with this 
            TrackedUrl"""
@@ -161,7 +158,6 @@ class TrackedUrl(models.Model):
         return self.trackedurlinstance_set.annotate(
                         num_accesses=models.Count('trackedurlaccess__count')
                     ).filter(num_accesses=0)
-    # pylint: enable-msg=E1101
 
     def add_trackee(self, trackee):
         """Creates a TrackedUrlInstance associating the given Trackee with this 
@@ -212,7 +208,6 @@ class TrackedUrlInstance(models.Model):
         a = TrackedUrlAccess(instance=self, time=time, count=count, url=url)
         a.save()
 
-    # pylint: disable-msg=E1101
     def _first_access(self):
         ag = self.trackedurlaccess_set.aggregate(models.Min('time'))
         return ag['time__min']
@@ -223,7 +218,6 @@ class TrackedUrlInstance(models.Model):
         tset = self.trackedurlaccess_set
         r = tset.aggregate(models.Sum('count'))['count__sum']
         return r  if r else  0  # handles case where r is None
-    # pylint: enable-msg=E1101
     
     first_access = property(_first_access)
     recent_access = property(_recent_access)
