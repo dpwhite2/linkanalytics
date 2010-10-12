@@ -1,7 +1,7 @@
 from linkanalytics.email import _email
+from linkanalytics import urlex
 
-from .. import helpers, base
-#from linkanalytics.tests import helpers, base
+from .. import base
 
 #==============================================================================#
 
@@ -70,8 +70,7 @@ class InstantiateEmails_TestCase(base.LinkAnalytics_TestCaseBase):
         uuid = '0'*32
         inst = _email.email_instantiator(textsrc, htmlsrc, urlbase)
         text, html = inst(uuid)
-        url = helpers.urlreverse_redirect_local(uuid=uuid, 
-                                                filepath='path/to/file.ext')
+        url = urlex.hashedurl_redirect_local(uuid, 'path/to/file.ext')
         self.assertEquals(text, '{0}{1}'.format(urlbase, url))
         expecthtml = "<html><head></head><body>{0}{1}</body></html>"
         expecthtml = expecthtml.format(urlbase, url)

@@ -17,8 +17,8 @@ urlpatterns = patterns('linkanalytics',
     
     # The Regex for accessTrackedUrl and accessHashedTrackedUrl: the ending '/' 
     # is optional.
-    (r'^access/'+_UUID+r'/'+_TAILPATH+r'$', 
-        'views.accessTrackedUrl', {}, 'linkanalytics-accessview'),
+    ##(r'^access/'+_UUID+r'/'+_TAILPATH+r'$', 
+    ##    'views.accessTrackedUrl', {}, 'linkanalytics-accessview'),
     (r'^access/j/'+_HASH+r'/'+_UUID+r'/'+_TAILPATH+r'$', 
         'views.accessHashedTrackedUrl', {}, 'linkanalytics-accesshashedview'),
 )

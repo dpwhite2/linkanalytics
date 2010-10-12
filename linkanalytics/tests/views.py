@@ -8,53 +8,52 @@ from django.core.urlresolvers import reverse as urlreverse
 
 from linkanalytics.models import TrackedUrlInstance, Trackee, TargetValidator
 from linkanalytics import targetviews, urlex
-import helpers
+
 import base
 
 #==============================================================================#
 # View tests:
 
-class AccessTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    def test_targetValidation(self):
-        from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
+# class AccessTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
+    # def test_targetValidation(self):
+        # from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
         
-        u = self.new_trackedurl(name='Name1')
-        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
-                            value='/linkanalytics/nonexistent_url/')
-        v.save()        
-        t = self.new_trackee(username='trackee1')
-        i = u.add_trackee(t)
-        url = helpers.urlreverse_redirect_local(i.uuid, 
-                                              filepath='linkanalytics/testurl/')
-        # This does not pass the current validator
-        response = self.client.get(url, follow=True)
-        self.assertEquals(response.status_code, 404)
+        # u = self.new_trackedurl(name='Name1')
+        # v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
+                            # value='/linkanalytics/nonexistent_url/')
+        # v.save()        
+        # t = self.new_trackee(username='trackee1')
+        # i = u.add_trackee(t)
+        # url = helpers.urlreverse_redirect_local(i.uuid, 
+                                              # filepath='linkanalytics/testurl/')
+        # # This does not pass the current validator
+        # response = self.client.get(url, follow=True)
+        # self.assertEquals(response.status_code, 404)
         
-        v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
-                            value='/linkanalytics/testurl/')
-        v.save()
-        # This now should pass the validator
-        response = self.client.get(url, follow=True)
-        self.assertEquals(response.status_code, 200)
-        self.assertEquals(len(response.redirect_chain),1)
+        # v = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
+                            # value='/linkanalytics/testurl/')
+        # v.save()
+        # # This now should pass the validator
+        # response = self.client.get(url, follow=True)
+        # self.assertEquals(response.status_code, 200)
+        # self.assertEquals(len(response.redirect_chain),1)
         
 
 class AccessHashedTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    def test_hashValidation(self):
-        from linkanalytics.models import generate_hash
-        
+    def test_hashValidation(self):        
         u = self.new_trackedurl(name='Name1')
         t = self.new_trackee(username='trackee1')
         i = u.add_trackee(t)
         
-        hash = generate_hash('/linkanalytics/nonexistent_url/')
+        # This first try will contain a hash calculated for a different url.
+        hash = urlex.generate_urlhash(i.uuid, '/linkanalytics/nonexistent_url/')
         urltail = urlex.urltail_redirect_local('linkanalytics/testurl/')
-        url = urlex.create_hashedurl(hash, i.uuid, urltail)
+        url = urlex.assemble_hashedurl(hash, i.uuid, urltail)
         # This should not pass the hash checker
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 404)
         
-        url = urlex.hashedurl_redirect_local(i, 'linkanalytics/testurl/')
+        url = urlex.hashedurl_redirect_local(i.uuid, 'linkanalytics/testurl/')
         # This now should pass the hash checker
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 200)
@@ -77,12 +76,7 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t = self.new_trackee('trackee1')
         i = u.add_trackee(t)
         
-        # The url we are resolving, using the default urls.py and targeturls.py:
-        #   URLINSTANCE  TARGETVIEW
-        #   URLINSTANCE = /linkanalytics/access/{uuid}
-        #   TARGETVIEW =  /r/linkanalytics/testurl/
-        url = helpers.urlreverse_redirect_local(i.uuid, 
-                                              filepath='linkanalytics/testurl/')
+        url = urlex.hashedurl_redirect_local(i.uuid, 'linkanalytics/testurl/')
         response = self.client.get(url, follow=True)
         chain = response.redirect_chain
         
@@ -102,12 +96,7 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t = self.new_trackee('trackee1')
         i = u.add_trackee(t)
         
-        # The url we are resolving, using the default urls.py and targeturls.py:
-        #   URLINSTANCE  TARGETVIEW
-        #   URLINSTANCE = /linkanalytics/access/{uuid}
-        #   TARGETVIEW =  /http/www.google.com/       
-        url = helpers.urlreverse_redirect_http(uuid=i.uuid, 
-                                               domain='www.google.com')
+        url = urlex.hashedurl_redirect_http(i.uuid, domain='www.google.com')
         
         # Limitation of Django testing framework: non-local urls will not be 
         # accessed.  So, in this case, www.google.com is NOT actually accessed.  
@@ -139,7 +128,7 @@ class ViewHtml_TestCase(base.LinkAnalytics_DBTestCaseBase):
         path = 'email/access-thankyou.html'
         
         # make sure it can be accessed via the tracked url
-        url = helpers.urlreverse_targetview_html(i.uuid, path)
+        url = urlex.hashedurl_html(i.uuid, path)
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         
@@ -153,7 +142,7 @@ class ViewPixelPng_TestCase(base.LinkAnalytics_DBTestCaseBase):
         t = self.new_trackee('trackee1')
         i = u.add_trackee(t)
         
-        url = helpers.urlreverse_targetview_pixelpng(i.uuid)
+        url = urlex.hashedurl_pixelpng(i.uuid)
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
         # In imghdr.what(), the first arg (the filename) is ignored when the 

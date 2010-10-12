@@ -4,8 +4,8 @@ from django.db import IntegrityError
 
 from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
 from linkanalytics.models import TrackedUrlAccess, TargetValidator
+from linkanalytics import urlex
 
-import helpers
 import base
 
 #==============================================================================#
@@ -261,11 +261,12 @@ class GenerateHash_TestCase(base.LinkAnalytics_TestCaseBase):
         # A very simple test.  Only tests that the hash function exists and 
         # returns the same hash value when given the same input.
         
-        from linkanalytics.models import generate_hash
+        from linkanalytics.models import _create_uuid
+        i = _create_uuid()
         s = 'This is some data to be hashed.'
         
-        a = generate_hash(s)
-        b = generate_hash(s)
+        a = urlex.generate_urlhash(i,s)
+        b = urlex.generate_urlhash(i,s)
         
         self.assertEquals(a, b)
     

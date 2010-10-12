@@ -126,19 +126,12 @@ def resolve_emails(parts):
             # should never raise an ObjectDoesNotExist exception.
             trackees.add(Trackee.objects.get(username=em))
     return { 'trackees':trackees, 'unknown_emails':unknown_emails }
-
-
-def generate_hash(data):
-    """Generates a hash for the given string.  The return value is a string of 
-       hexadecimal digits.
-    """
-    return hmac.new(app_settings.SECRET_KEY, data, hashlib.sha1).hexdigest()
-
+    
 def _create_uuid():
     """Returns a 32-character string containing a randomly-generated UUID."""
     return uuid.uuid4().hex
 
-
+    
 class TrackedUrl(models.Model):
     """A group of urls whose accesses are tracked by LinkAnalytics.  The 
        TrackedUrl object is *not* the same as the physical URL which is 
@@ -195,16 +188,6 @@ class TrackedUrl(models.Model):
             v = qs[0]
         return v
         
-    def generate_hash(self, data):
-        """ Generates a hash for the given string.  The SECRET_KEY and 
-            TrackedUrl's secret_id value are both used.  The returned value is 
-            a string of hexadecimal digits.
-        """
-        return generate_hash(data+self.secret_id)
-                        
-    def match_hash(self, hash, data):
-        newhash = self.generate_hash(data)
-        return hash == newhash
 
 
 class TrackedUrlInstance(models.Model):
@@ -244,12 +227,23 @@ class TrackedUrlInstance(models.Model):
         a.save()
 
     def _first_access(self):
+        """Getter for first_access property.  Returns the TrackedUrlAccess 
+           object representing the first access of this TrackedUrlInstance, or 
+           None if it has not yet been accessed.
+        """
         ag = self.trackedurlaccess_set.aggregate(models.Min('time'))
         return ag['time__min']
     def _recent_access(self):
+        """Getter for recent_access property.  Returns the TrackedUrlAccess 
+           object representing the most recent access of this 
+           TrackedUrlInstance, or None if it has not yet been accessed.
+        """
         ag = self.trackedurlaccess_set.aggregate(models.Max('time'))
         return ag['time__max']
     def _access_count(self):
+        """Getter for access_count property.  Returns the access count for this 
+           TrackedUrlInstance.
+        """
         tset = self.trackedurlaccess_set
         r = tset.aggregate(models.Sum('count'))['count__sum']
         return r  if r else  0  # handles case where r is None
@@ -268,16 +262,23 @@ class TrackedUrlInstance(models.Model):
             return True
             
     def generate_hashedurl(self, urltail):
-        if not urltail.startswith('/'):
-            urltail = '/%s' % urltail
-        hash = self.trackedurl.generate_hash(urltail)
-        return urlex.create_hashedurl(hash, self.uuid, urltail)
-            
-    def generate_hash(self, data):
-        return self.trackedurl.generate_hash(data)
+        """Creates a hashed url appropriate for this TrackedUrlInstance.  The 
+           urltail is the portion of the url that will appear after the uuid.
+        """
+        return urlex.create_hashedurl(self.uuid, urltail)
         
+    def generate_hash(self, data):
+        """Creates a hash value appropriate for this TrackedUrlInstance.  The 
+           data parameter is the value that should appear after the uuid.
+        """
+        return urlex.generate_urlhash(self.uuid, data)
+    
     def match_hash(self, hash, data):
-        return self.trackedurl.match_hash(hash, data)
+        """Returns True if hash == self.generate_hash(data).  Returns False 
+           otherwise.
+        """
+        newhash = self.generate_hash(data)
+        return hash == newhash
     
 
 class TrackedUrlAccess(models.Model):

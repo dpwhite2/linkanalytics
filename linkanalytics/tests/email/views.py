@@ -7,7 +7,7 @@ from django.core.urlresolvers import reverse as urlreverse
 from linkanalytics.models import TrackedUrlInstance, Trackee
 from linkanalytics.email.models import Email, DraftEmail
 
-from .. import helpers, base
+from .. import base
 
 #==============================================================================#
 # Email view tests:

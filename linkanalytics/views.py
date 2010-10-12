@@ -1,6 +1,3 @@
-
-
-
 import re
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -56,31 +53,6 @@ def _get_target_to_validate(tailpath):
 
 #==============================================================================#
 # Linkanalytics basic views
-
-def accessTrackedUrl(request, uuid, tailpath):
-    if not tailpath.startswith('/'):
-        tailpath = '/%s' % tailpath
-    try:
-        i = TrackedUrlInstance.objects.get(uuid=uuid)
-    except ObjectDoesNotExist:
-        raise Http404
-    
-    target_to_validate = _get_target_to_validate(tailpath)
-    if not i.validate_target(target_to_validate):
-        raise Http404
-    
-    url = request.build_absolute_uri()
-    
-    try:
-        viewfunc, args, kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
-        response = viewfunc(request, uuid, *args, **kwargs)
-        # record access only *after* viewfunc() returned
-        i.on_access(success=True, url=url)
-    except Exception:
-        i.on_access(success=False, url=url)
-        raise
-    
-    return response
     
 def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     if not tailpath.startswith('/'):

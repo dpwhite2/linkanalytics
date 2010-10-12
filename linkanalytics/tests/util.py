@@ -3,7 +3,6 @@ from linkanalytics.email import _email
 from linkanalytics.util.htmltotext import HTMLtoText
 from linkanalytics.util.htmldocument import  HtmlDocument
 
-import helpers
 import base
 
 #==============================================================================#

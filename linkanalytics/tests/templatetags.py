@@ -5,7 +5,8 @@ import textwrap
 
 from django.template import Template, Context
 
-import helpers
+from linkanalytics import urlex
+
 import base
 
 #==============================================================================#
@@ -63,8 +64,7 @@ class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         urlbase = 'http://example.com'
         c = Context({'linkid':uuid, 'urlbase':urlbase})
         s = t.render(c)
-        url = helpers.urlreverse_redirect_local(uuid=uuid, 
-                                                filepath='path/to/file.ext')
+        url = urlex.hashedurl_redirect_local(uuid, 'path/to/file.ext')
         self.assertEquals(s, '\n{0}{1}\n'.format(urlbase,url))
         
     def test_url(self):
@@ -78,9 +78,8 @@ class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         urlbase = 'http://example.com'
         c = Context({'linkid':uuid, 'urlbase':urlbase})
         s = t.render(c)
-        url = helpers.urlreverse_redirect_http(uuid=uuid, 
-                                               domain='www.example.com', 
-                                               filepath='path/file.html')
+        url = urlex.hashedurl_redirect_http(uuid, domain='www.example.com', 
+                                            filepath='path/file.html')
         self.assertEquals(s, '\n{0}{1}\n'.format(urlbase,url))
         
     

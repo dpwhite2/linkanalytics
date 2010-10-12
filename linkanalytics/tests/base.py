@@ -33,6 +33,8 @@ _HTMLTAG = r'''</?[A-Za-z0-9 ='"\\:.%+]+>'''  # includes the tag and attributes
 _re_adjacenttags = re.compile(r'('+_HTMLTAG+r')\s+(?='+_HTMLTAG+r')')
 
 class LinkAnalytics_TestCaseBase(TestCase):
+    urls = 'linkanalytics.tests.test_urls'
+    
     def assertEqualsHtml(self, a, b):
         """Check whether two objects, a and b, are equal when basic HTML rules 
            are taken into account.  This includes regarding all whitespace as 
@@ -47,10 +49,6 @@ class LinkAnalytics_TestCaseBase(TestCase):
         self.assertTrue(aa==bb, msg)
     
 class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
-    urls = 'linkanalytics.tests.test_urls'
-    
-    # sets site.domain to 'testserver' which is what Django calls the 
-    # testserver within URLs
     fixtures = ['sites.json']
     
     def scoped_login(self, username, password):

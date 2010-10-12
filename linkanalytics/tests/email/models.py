@@ -8,8 +8,9 @@ from django.core.urlresolvers import reverse as urlreverse
 from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
 from linkanalytics.email.models import DraftEmail, Email
 from linkanalytics import app_settings
+from linkanalytics import urlex
 
-from .. import helpers, base
+from .. import base
 
 
 #==============================================================================#
@@ -109,11 +110,12 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         src = img.get('src', default=None)
         self.assertNotEquals(src, None)
         
-        urltail = urlreverse( 'targetview-pixelpng', 
-                              urlconf='linkanalytics.targeturls')
-        urltail = urltail[1:] # remove leading '/'
-        url = urlreverse( 'linkanalytics-accessview', 
-                          kwargs={'uuid': uuid, 'tailpath':urltail})
+        url = urlex.hashedurl_pixelpng(uuid)
+        #urltail = urlreverse( 'targetview-pixelpng', 
+        #                      urlconf='linkanalytics.targeturls')
+        #urltail = urltail[1:] # remove leading '/'
+        #url = urlreverse( 'linkanalytics-accessview', 
+        #                  kwargs={'uuid': uuid, 'tailpath':urltail})
         
         self.assertEquals(src, '{0}{1}'.format(app_settings.URLBASE, url))
         
