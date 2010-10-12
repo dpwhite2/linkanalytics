@@ -55,6 +55,15 @@ def _get_target_to_validate(tailpath):
 # Linkanalytics basic views
     
 def accessHashedTrackedUrl(request, hash, uuid, tailpath):
+    """The main view function for all tracking behavior.  
+    
+       Urls to be tracked are first dispatched here.  If it validates 
+       successfully, it is sent on to a 'targetview' which can do almost 
+       anything a normal view can do.  On successful return from the 
+       targetview, the access is counted and a response is returned.  If 
+       targetview raises an exception, the unsuccessful access is noted and the 
+       exception is reraised.
+    """
     if not tailpath.startswith('/'):
         tailpath = '/%s' % tailpath
     try:

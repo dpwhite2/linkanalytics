@@ -29,12 +29,20 @@ def _email_render_to_response(template, dictionary, context_instance):
     
 @login_required
 def viewEmail(request):
+    """The main view for the Linkanalytics.Email app."""
     return _email_render_to_response('linkanalytics/email/email.html', {},
                               context_instance=RequestContext(request))
     
         
 @login_required
 def composeEmail(request, emailid=None):
+    """The view in which to compose an email, or edit an existing (but 
+       not-yet-sent) email.  If emailid is None, compose a new email; if 
+       emailid refers to a valid but unsent email, edit the existing email; if 
+       emailid refers to a valid but sent email, display the contents but do 
+       not allow it to be edited.
+    """
+    # TODO: if emailid is not None and not found, do what?
     if request.method == 'POST': # If the form has been submitted...
         if emailid is not None: 
             instance = DraftEmail.objects.get(pk=emailid)
@@ -75,24 +83,28 @@ def composeEmail(request, emailid=None):
     
 @login_required
 def viewSentEmails(request):
+    """The view which displays a list of all sent emails."""
     return _email_render_to_response('linkanalytics/email/sent.html',
                              {'emails': Email.objects.all() },
                               context_instance=RequestContext(request))
     
 @login_required
 def viewDraftEmails(request):
+    """The view which displays a list of all unsent draft emails."""
     return _email_render_to_response('linkanalytics/email/drafts.html',
                              {'drafts': DraftEmail.objects.filter(sent=False) },
                               context_instance=RequestContext(request))
     
 @login_required
 def viewEmailContacts(request):
+    """The view which displays a list of all contacts."""
     return _email_render_to_response('linkanalytics/email/contacts.html',
                     { 'contacts': Trackee.objects.exclude(emailaddress='') },
                     context_instance=RequestContext(request))
     
 @login_required
 def createEmailContact(request, username=None):
+    """The view in which one may create and/or edit a contact."""
     if request.method == 'POST': # If the form has been submitted...
         if username is not None:
             t = Trackee.objects.get(username=username)
@@ -121,48 +133,64 @@ def createEmailContact(request, username=None):
     
 @login_required
 def viewSingleSentEmail(request, emailid):
+    # TODO: if emailid is not found, do what?
     return HttpResponse('View: Under Construction.')
         
-@login_required
-def viewEmailReadList(request, emailid):
-    eml = Email.objects.get(pk=emailid)
-    u = eml.trackedurl
-    
-    def items():
-        for instance in u.url_instances_read():
+        
+class EmailReadIter(object):
+    """Iterate through the read UrlInstances associated with the given email."""
+    def __init__(self, email):
+        self.trackedurl = email.trackedurl
+    def __iter__(self):
+        for instance in self.trackedurl.url_instances_read():
             yield { 'urlinstance': instance,
                     'trackee': instance.trackee,
                   }
+        
+@login_required
+def viewEmailReadList(request, emailid):
+    """The view which displays a list of recipients who have read the given 
+       email."""
+    # TODO: if emailid is not found, do what?
+    eml = Email.objects.get(pk=int(emailid))
     
-    itemiter = items()
-    
+    itemiter = EmailReadIter(eml)
     return _email_render_to_response('linkanalytics/email/whoread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))
         
-@login_required
-def viewEmailUnreadList(request, emailid):
-    eml = Email.objects.get(pk=emailid)
-    u = eml.trackedurl
-    
-    def items():
-        for instance in u.url_instances_unread():
+        
+class EmailUnreadIter(object):
+    """Iterate through the unread UrlInstances associated with the given 
+       email."""
+    def __init__(self, email):
+        self.trackedurl = email.trackedurl
+    def __iter__(self):
+        for instance in self.trackedurl.url_instances_unread():
             yield { 'urlinstance': instance,
                     'trackee': instance.trackee,
                   }
+        
+@login_required
+def viewEmailUnreadList(request, emailid):
+    """The view which displays a list of recipients who have not read the given 
+       email."""
+    # TODO: if emailid is not found, do what?
+    eml = Email.objects.get(pk=emailid)
     
-    itemiter = items()
-    
+    itemiter = EmailReadIter(eml)
     return _email_render_to_response('linkanalytics/email/whounread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))
         
 @login_required
 def viewEmailRecipientsList(request, emailid):
+    # TODO: if emailid is not found, do what?
     return HttpResponse('View: Under Construction.')
         
 @login_required
 def viewSentEmailContent(request, emailid):
+    # TODO: if emailid is not found, do what?
     return HttpResponse('View: Under Construction.')
 
 #==============================================================================#

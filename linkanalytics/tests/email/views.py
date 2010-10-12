@@ -242,15 +242,40 @@ class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
 class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
+        # When no emails exist
         self.create_users(1)
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-viewdrafts')
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
             
-    # When no emails exist
-    # When an email has been set (and should no longer be a draft)
-    # When one unsent email draft exists
+    def test_oneUnsentDraft(self):
+        # When one unsent email draft exists
+        self.create_users(1)
+        d = DraftEmail()
+        d.save()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewdrafts')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            self.assertEquals(len(response.context['drafts']), 1)
+            self.assertEquals(response.context['drafts'][0].pk, d.pk)
+    
+    def test_oneSent(self):
+        # When an email has been sent, and therefore no unsent drafts exist
+        self.create_users(1)
+        t = self.new_trackee('trackee')
+        d = DraftEmail(subject='X', message='My message.')
+        d.save()
+        d.pending_recipients.add(t)
+        d.save()
+        d.send()
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewdrafts')
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            self.assertEquals(len(response.context['drafts']), 0)
+        
     # When multi unsent email drafts exist
     
 class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
@@ -259,11 +284,10 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
         u = self.new_trackedurl('trackedurl')
         e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
         e.save()
-        id = e.pk
         self.create_users(1)
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-viewread', 
-                             kwargs={'emailid': id})
+                             kwargs={'emailid': e.pk})
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
             
@@ -271,7 +295,34 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
             items = list(itemiter)
             self.assertEquals(len(items), 0)
             
-    # Check email read
+    def test_oneRead(self):
+        # Check email read
+        t = self.new_trackee('trackee')
+        d = DraftEmail(subject='X', message='My message.', pixelimage=True)
+        d.save()
+        d.pending_recipients.add(t)
+        d.save()
+        e = d.send()
+        
+        qs = TrackedUrlInstance.objects.all()
+        self.assertEquals(qs.count(), 1)
+        i = qs[0]
+        i.on_access(True, 'the_url_goes_here')
+        
+        self.create_users(1)
+        with self.scoped_login('user0', 'password'):
+            url = urlreverse('linkanalytics-email-viewread', 
+                             kwargs={'emailid': e.pk})
+            response = self.client.get(url)
+            self.assertEquals(response.status_code, 200)
+            
+            self.assertEquals(response.context['email'], e)
+            
+            itemiter = response.context['items']
+            items = list(itemiter)
+            self.assertEquals(len(items), 1)
+            self.assertEquals(items[0]['urlinstance'], i)
+            
     # Check one email read and one not read
     # Check multiple emails read
     # what if the given email id does not exist?

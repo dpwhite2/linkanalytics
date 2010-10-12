@@ -18,6 +18,9 @@ __test__ = False
 
 #==============================================================================#
 class UserLogin_Context(object):
+    """Class for use with Python's with statement to ease the writing of tests 
+       that involve user logins.
+    """
     def __init__(self, client, username, password):
         self.client = client
         self.username = username
@@ -33,6 +36,7 @@ _HTMLTAG = r'''</?[A-Za-z0-9 ='"\\:.%+]+>'''  # includes the tag and attributes
 _re_adjacenttags = re.compile(r'('+_HTMLTAG+r')\s+(?='+_HTMLTAG+r')')
 
 class LinkAnalytics_TestCaseBase(TestCase):
+    """Base TestCase class for all Linkanalytics test cases."""
     urls = 'linkanalytics.tests.test_urls'
     
     def assertEqualsHtml(self, a, b):
@@ -49,14 +53,27 @@ class LinkAnalytics_TestCaseBase(TestCase):
         self.assertTrue(aa==bb, msg)
     
 class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
+    """Base TestCase class for all Linkanalytics test cases which access the 
+       database.  This automatically destroys all Model objects in tearDown() 
+       among other things.
+    """
     fixtures = ['sites.json']
     
     def scoped_login(self, username, password):
+        """Allows the login functionality to be used via the with statement, to 
+           make coding somewhat simpler.
+        """
         return UserLogin_Context(self.client, username, password)
+        
     def setUp(self):
         self.today = datetime.date.today()
         self.users = []
+        
     def create_users(self, n):
+        """Create n users for a test case.  The users will be named userN where 
+           N is the index of the user.  Users can be accessed through the 
+           member variable 'users' which is a list of Users.
+        """
         for user in self.users:
             user.delete()
         self.users = [
