@@ -1,6 +1,3 @@
-import djcelery
-djcelery.setup_loader()
-
 # Django settings for daveday1 project.
 
 DEBUG = True
@@ -96,7 +93,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
-    'djcelery',
     'linkanalytics',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
