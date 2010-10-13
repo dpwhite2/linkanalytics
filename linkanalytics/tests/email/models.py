@@ -77,6 +77,23 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(django_email.outbox[0].subject, 'Subject')
         self.assertEquals(django_email.outbox[0].recipients(), 
                           ['user@example.com'])
+                          
+    def test_send_blankSubject(self):
+        t = Trackee(username='user', emailaddress='user@example.com')
+        t.save()
+        de = DraftEmail(fromemail='', pixelimage=False)
+        de.message = 'My message.'
+        de.save()
+        de.pending_recipients.add(t)
+        de.save()
+        e = de.send()
+        
+        self.assertTrue(de.sent)
+        self.assertEquals(e.subject, app_settings.EMAIL_DEFAULT_SUBJECT)
+        
+        self.assertEquals(len(django_email.outbox), 1)
+        self.assertEquals( django_email.outbox[0].subject, 
+                           app_settings.EMAIL_DEFAULT_SUBJECT )
         
     def test_send_pixelimage(self):
         """Sends an email containing a pixelimage."""
