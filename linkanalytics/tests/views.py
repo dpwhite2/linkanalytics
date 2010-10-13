@@ -6,7 +6,7 @@ import imghdr
 
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedUrlInstance, Trackee, TargetValidator
+from linkanalytics.models import TrackedUrlInstance, Trackee
 from linkanalytics import targetviews, urlex
 
 import base

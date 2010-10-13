@@ -10,9 +10,6 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.urlresolvers import reverse as urlreverse
 
-#from django.db.models import F
-
-
 from linkanalytics import app_settings
 from linkanalytics import urlex
 
@@ -23,6 +20,7 @@ from linkanalytics import urlex
 _subpackages = ['linkanalytics.email',]
 
 #==============================================================================#
+# Django validators
 
 def validate_onezero(value):
     """The given value must be a 1 or a 0.  If it is not, Django's 
@@ -177,16 +175,16 @@ class TrackedUrl(models.Model):
         i.save()
         return i
         
-    def add_validator(self, validator_type, value):
-        # does a validator with the given type and value already exist?
-        qs = self.targetvalidator_set.filter(type=validator_type, value=value)
-        if not qs.exists():
-            v = TargetValidator(trackedurl=self, type=validator_type, 
-                                value=value)
-            v.save()
-        else:
-            v = qs[0]
-        return v
+    # def add_validator(self, validator_type, value):
+        # # does a validator with the given type and value already exist?
+        # qs = self.targetvalidator_set.filter(type=validator_type, value=value)
+        # if not qs.exists():
+            # v = TargetValidator(trackedurl=self, type=validator_type, 
+                                # value=value)
+            # v.save()
+        # else:
+            # v = qs[0]
+        # return v
         
 
 
@@ -253,14 +251,14 @@ class TrackedUrlInstance(models.Model):
     recent_access = property(_recent_access)
     access_count = property(_access_count)
     
-    def validate_target(self, url):
-        qs = self.trackedurl.targetvalidator_set.all()
-        if qs.exists():
-            return any( v(url) for v in qs )
-        else:
-            # Return True explicitly because any() on an empty sequence 
-            # returns False.
-            return True
+    # def validate_target(self, url):
+        # qs = self.trackedurl.targetvalidator_set.all()
+        # if qs.exists():
+            # return any( v(url) for v in qs )
+        # else:
+            # # Return True explicitly because any() on an empty sequence 
+            # # returns False.
+            # return True
             
     def generate_hashedurl(self, urltail):
         """Creates a hashed url appropriate for this TrackedUrlInstance.  The 
@@ -294,44 +292,44 @@ class TrackedUrlAccess(models.Model):
     url =   models.CharField(max_length=3000, blank=True)
     
 
-_VALIDATOR_TYPE_LITERAL = 0
-_VALIDATOR_TYPE_REGEX = 1
-_VALIDATOR_TYPE_FUNC = 2
+# _VALIDATOR_TYPE_LITERAL = 0
+# _VALIDATOR_TYPE_REGEX = 1
+# _VALIDATOR_TYPE_FUNC = 2
 
-_VALIDATOR_TYPES = (
-    (_VALIDATOR_TYPE_LITERAL,   'Literal URL'),
-    (_VALIDATOR_TYPE_REGEX,     'Regex'),
-    (_VALIDATOR_TYPE_FUNC,      'Function'),
-    )
+# _VALIDATOR_TYPES = (
+    # (_VALIDATOR_TYPE_LITERAL,   'Literal URL'),
+    # (_VALIDATOR_TYPE_REGEX,     'Regex'),
+    # (_VALIDATOR_TYPE_FUNC,      'Function'),
+    # )
     
-_targetvalidator_regex_cache = {}
+# _targetvalidator_regex_cache = {}
 
-def _get_targetvalidator_regex(s):
-    if s not in _targetvalidator_regex_cache:
-        _targetvalidator_regex_cache[s] = re.compile(s)
-    return _targetvalidator_regex_cache[s]
+# def _get_targetvalidator_regex(s):
+    # if s not in _targetvalidator_regex_cache:
+        # _targetvalidator_regex_cache[s] = re.compile(s)
+    # return _targetvalidator_regex_cache[s]
         
     
-class TargetValidator(models.Model):
-    """"""
-    trackedurl = models.ForeignKey(TrackedUrl)
-    type =       models.IntegerField(choices=_VALIDATOR_TYPES)
-    value =      models.CharField(max_length=3000)
+# class TargetValidator(models.Model):
+    # """"""
+    # trackedurl = models.ForeignKey(TrackedUrl)
+    # type =       models.IntegerField(choices=_VALIDATOR_TYPES)
+    # value =      models.CharField(max_length=3000)
     
-    def __call__(self, url):
-        if self.type == _VALIDATOR_TYPE_LITERAL:
-            if url == self.value:
-                return True
-        elif self.type == _VALIDATOR_TYPE_REGEX:
-            r = _get_targetvalidator_regex(self.value)
-            if r.search(url):
-                return True
-        elif self.type == _VALIDATOR_TYPE_FUNC:
-            mname, dot, fname = self.value.rpartition('.')
-            # do not catch ImportError here, let it go for debugging purposes
-            m = __import__(mname, fromlist=[fname])
-            return getattr(m, fname)(url)
-        return False
+    # def __call__(self, url):
+        # if self.type == _VALIDATOR_TYPE_LITERAL:
+            # if url == self.value:
+                # return True
+        # elif self.type == _VALIDATOR_TYPE_REGEX:
+            # r = _get_targetvalidator_regex(self.value)
+            # if r.search(url):
+                # return True
+        # elif self.type == _VALIDATOR_TYPE_FUNC:
+            # mname, dot, fname = self.value.rpartition('.')
+            # # do not catch ImportError here, let it go for debugging purposes
+            # m = __import__(mname, fromlist=[fname])
+            # return getattr(m, fname)(url)
+        # return False
 
 #==============================================================================#
 # import models from sub packages

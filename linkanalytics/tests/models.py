@@ -3,7 +3,7 @@ import datetime
 from django.db import IntegrityError
 
 from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
-from linkanalytics.models import TrackedUrlAccess, TargetValidator
+from linkanalytics.models import TrackedUrlAccess
 from linkanalytics import urlex
 
 import base
@@ -39,9 +39,6 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(i.recent_access, None)
         self.assertEquals(i.access_count, 0)
         self.assertEquals(i.was_accessed(), False)
-        # without validators, it should accept any target
-        self.assertTrue(i.validate_target('abc/def.xyz'))
-        self.assertTrue(i.validate_target(''))
         
     def test_cancelled_access(self):
         # Cancel an access using the Accessed object returned by on_access()
@@ -105,29 +102,7 @@ class TrackedUrlInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(i1.access_count, 2)
         self.assertEquals(i1.was_accessed(), True)
         
-    def test_validate_target(self):
-        from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
-        
-        u = TrackedUrl(name='Name1')
-        u.save()
-        
-        v1 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
-                             value='abc/def.xyz')
-        v1.save()
-        v2 = TargetValidator(trackedurl=u, type=_VALIDATOR_TYPE_LITERAL, 
-                             value='RST/def.xyz')
-        v2.save()
-        
-        t = Trackee(username='trackee1')
-        t.save()
-        
-        i = u.add_trackee(t)
-        self.assertTrue(i.validate_target('abc/def.xyz'))
-        self.assertTrue(i.validate_target('RST/def.xyz'))
-        self.assertFalse(i.validate_target('cba/def.xyz'))
-        self.assertFalse(i.validate_target(''))
-        self.assertFalse(i.validate_target('/'))
-        
+       
         
         
         
@@ -272,64 +247,3 @@ class GenerateHash_TestCase(base.LinkAnalytics_TestCaseBase):
     
 #==============================================================================#
 
-def _targetvalidator_test_func(url):
-    return url == 'abc/def.xyz'
-
-class TargetValidator_TestCase(base.LinkAnalytics_DBTestCaseBase):
-    def test_literalUrl(self):
-        from linkanalytics.models import _VALIDATOR_TYPE_LITERAL
-        t = TrackedUrl(name='Tracked')
-        t.save()
-        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_LITERAL, 
-                                value='abc/def.xyz')
-        v.save()
-        
-        self.assertTrue(v('abc/def.xyz'))
-        self.assertFalse(v(''))
-        self.assertFalse(v('abc/def.xy'))
-        self.assertFalse(v('bc/def.xyz'))
-        self.assertFalse(v('/'))
-        
-    def test_validatorRegex(self):
-        from linkanalytics.models import _VALIDATOR_TYPE_REGEX
-        t = TrackedUrl(name='Tracked')
-        t.save()
-        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_REGEX, 
-                                value=r'[abc]+/[def]+\.[xyz]+')
-        v.save()
-        
-        self.assertTrue(v('abc/def.xyz'))
-        self.assertFalse(v(''))
-        self.assertTrue(v('abc/def.xy'))
-        self.assertTrue(v('5abc/def.xy'))
-        self.assertTrue(v('abc/def.xyz5'))
-        self.assertTrue(v('bc/def.xyz'))
-        self.assertFalse(v('/'))
-        
-        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_REGEX, 
-                                value=r'^[abc]+/[def]+\.[xyz]+$')
-        v.save()
-        
-        self.assertTrue(v('abc/def.xyz'))
-        self.assertFalse(v(''))
-        self.assertTrue(v('abc/def.xy'))
-        self.assertFalse(v('5abc/def.xy'))
-        self.assertFalse(v('abc/def.xyz5'))
-        self.assertTrue(v('bc/def.xyz'))
-        self.assertFalse(v('/'))
-
-    def test_validatorFunction(self):
-        from linkanalytics.models import _VALIDATOR_TYPE_FUNC
-        t = TrackedUrl(name='Tracked')
-        t.save()
-        v = TargetValidator(trackedurl=t, type=_VALIDATOR_TYPE_FUNC, 
-                value='linkanalytics.tests.models._targetvalidator_test_func')
-        v.save()
-        
-        self.assertTrue(v('abc/def.xyz'))
-        self.assertFalse(v(''))
-        self.assertFalse(v('abc/def.xy'))
-        self.assertFalse(v('bc/def.xyz'))
-        self.assertFalse(v('/'))
-        
-#==============================================================================#

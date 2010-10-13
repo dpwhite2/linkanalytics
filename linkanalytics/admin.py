@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
-from linkanalytics.models import TrackedUrlAccess, TargetValidator
+from linkanalytics.models import TrackedUrlAccess
 
 import linkanalytics.email.admin  # register email admin classes
 
@@ -12,12 +12,10 @@ trackees_count.short_description = 'Trackees'
 
 class TrackeesInline(admin.TabularInline):
     model = TrackedUrl.trackees.through
-class TargetValidatorInline(admin.TabularInline):
-    model = TargetValidator
 
 class TrackedUrlAdmin(admin.ModelAdmin):
     list_display = ('name', trackees_count, )
-    inlines = [ TrackeesInline, TargetValidatorInline ]
+    inlines = [ TrackeesInline ]
     
 
 class TrackeeAdmin(admin.ModelAdmin):

@@ -9,7 +9,6 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
-#from linkanalytics.models import generate_hash
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
@@ -19,37 +18,37 @@ from linkanalytics import app_settings
 _TARGETURLCONF = "linkanalytics.targeturls"
 
 #==============================================================================#
-def _donothing(tailpath):
-    return tailpath
+# def _donothing(tailpath):
+    # return tailpath
     
-def _ttv_http(tailpath):
-    # tailpath begins '/http'
-    return 'http://'+tailpath[5:]
+# def _ttv_http(tailpath):
+    # # tailpath begins '/http'
+    # return 'http://'+tailpath[5:]
     
-def _ttv_https(tailpath):
-    # tailpath begins '/https'
-    return 'https://'+tailpath[6:]
+# def _ttv_https(tailpath):
+    # # tailpath begins '/https'
+    # return 'https://'+tailpath[6:]
     
-def _ttv_local(tailpath):
-    # tailpath begins '/r' or '/h'
-    return tailpath[2:]
+# def _ttv_local(tailpath):
+    # # tailpath begins '/r' or '/h'
+    # return tailpath[2:]
     
-_target_to_validate_convertors = {
-    'http': _ttv_http,
-    'https': _ttv_https,
-    'h': _ttv_local,
-    'r': _ttv_local,
-    }
+# _target_to_validate_convertors = {
+    # 'http': _ttv_http,
+    # 'https': _ttv_https,
+    # 'h': _ttv_local,
+    # 'r': _ttv_local,
+    # }
     
-# Get the string from the beginning up until the first slash, or if it begins 
-# with a slash, up until the second slash.  No slashes are included in the 
-# captured substring.
-_re_target_to_validate = re.compile(r'^/?(?P<start>[^/\s]+)(?:/.*)?$')
+# # Get the string from the beginning up until the first slash, or if it begins 
+# # with a slash, up until the second slash.  No slashes are included in the 
+# # captured substring.
+# _re_target_to_validate = re.compile(r'^/?(?P<start>[^/\s]+)(?:/.*)?$')
 
-def _get_target_to_validate(tailpath):
-    m = _re_target_to_validate.match(tailpath)
-    start = m.group('start')  if m else  tailpath
-    return _target_to_validate_convertors.get(start, _donothing)(tailpath)
+# def _get_target_to_validate(tailpath):
+    # m = _re_target_to_validate.match(tailpath)
+    # start = m.group('start')  if m else  tailpath
+    # return _target_to_validate_convertors.get(start, _donothing)(tailpath)
 
 #==============================================================================#
 # Linkanalytics basic views
