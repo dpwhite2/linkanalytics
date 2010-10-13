@@ -188,7 +188,7 @@ class DraftEmail(models.Model):
            directly, instead use send().
         """
         if not self.subject:
-            self.subject = '[No Subject]'
+            self.subject = app_settings.EMAIL_DEFAULT_SUBJECT
         text, html = _email.compile_email(self.message, **kwargs)
         u = _create_trackedurl_for_email()
         email_model = Email( fromemail=self.fromemail, trackedurl=u,

@@ -1,35 +1,33 @@
-import hashlib
 import hmac
 
 from django.core.urlresolvers import reverse as urlreverse
 
 from linkanalytics import app_settings
 
-_TARGETURLCONF = "linkanalytics.targeturls"
-
-
 #==============================================================================#
 def urltail_redirect_http(domain, filepath=''):
-    return urlreverse('redirect-http', urlconf=_TARGETURLCONF, 
+    return urlreverse('redirect-http', urlconf=app_settings.TARGETS_URLCONF, 
                       kwargs={'domain':domain, 'filepath':filepath})
                       
 def urltail_redirect_https(domain, filepath=''):
-    return urlreverse('redirect-https', urlconf=_TARGETURLCONF, 
+    return urlreverse('redirect-https', urlconf=app_settings.TARGETS_URLCONF, 
                       kwargs={'domain':domain, 'filepath':filepath})
                       
 def urltail_redirect_local(filepath):
-    return urlreverse('redirect-local', urlconf=_TARGETURLCONF, 
+    return urlreverse('redirect-local', urlconf=app_settings.TARGETS_URLCONF, 
                       kwargs={'filepath':filepath})
                       
 def urltail_html(filepath):
-    return urlreverse('targetview-html', urlconf=_TARGETURLCONF, 
+    return urlreverse('targetview-html', urlconf=app_settings.TARGETS_URLCONF, 
                       kwargs={'filepath':filepath})
                       
 def urltail_pixelgif():
-    return urlreverse('targetview-pixelgif', urlconf=_TARGETURLCONF)
+    return urlreverse('targetview-pixelgif', 
+                      urlconf=app_settings.TARGETS_URLCONF)
                       
 def urltail_pixelpng():
-    return urlreverse('targetview-pixelpng', urlconf=_TARGETURLCONF)
+    return urlreverse('targetview-pixelpng', 
+                      urlconf=app_settings.TARGETS_URLCONF)
 
 #==============================================================================#
 def hashedurl_redirect_http(uuid, domain, filepath=''):
@@ -62,7 +60,7 @@ def generate_urlhash(uuid, urltail):
        string of hexadecimal digits representing the hash value.
     """
     return hmac.new(app_settings.SECRET_KEY, uuid+urltail, 
-                    hashlib.sha1).hexdigest()
+                    app_settings.DIGEST_CTOR).hexdigest()
                     
 def create_hashedurl(uuid, urltail):
     if not urltail.startswith('/'):
@@ -71,16 +69,8 @@ def create_hashedurl(uuid, urltail):
     return assemble_hashedurl(hash, uuid, urltail[1:])
                     
 def assemble_hashedurl(hash, uuid, urltail):
-    #if not urltail.startswith('/'):
-    #    urltail = '/%s' % urltail
     kwargs = { 'hash': hash, 'uuid': uuid, 'tailpath': urltail }
     return urlreverse('linkanalytics-accesshashedview', kwargs=kwargs)
-    
-#def create_hashedurl(hash, uuid, urltail):
-#    if not urltail.startswith('/'):
-#        urltail = '/%s' % urltail
-#    kwargs = { 'hash': hash, 'uuid': uuid, 'tailpath': urltail }
-#    return urlreverse('linkanalytics-accesshashedview', kwargs=kwargs)
 
 #==============================================================================#
 

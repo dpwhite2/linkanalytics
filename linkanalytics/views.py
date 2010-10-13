@@ -12,11 +12,6 @@ from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
-
-
-# this should be a configurable setting?
-_TARGETURLCONF = "linkanalytics.targeturls"
-
 #==============================================================================#
 # Linkanalytics basic views
     
@@ -47,7 +42,8 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     
     # Call the targetview function.
     try:
-        viewfunc, args, kwargs = resolve(tailpath, urlconf=_TARGETURLCONF)
+        viewfunc, args, kwargs = resolve(tailpath, 
+                                         urlconf=app_settings.TARGETS_URLCONF)
         response = viewfunc(request, uuid, *args, **kwargs)
         # record access only *after* viewfunc() returned
         i.on_access(success=True, url=url)

@@ -1,5 +1,3 @@
-
-
 from django.template import Template, Context
 
 from linkanalytics.util.htmltotext import HTMLtoText

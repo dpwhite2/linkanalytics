@@ -2,8 +2,6 @@ import uuid
 import datetime
 import itertools
 import re
-import hashlib
-import hmac
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -141,8 +139,6 @@ class TrackedUrl(models.Model):
     name =      models.CharField(max_length=256)
     comments =  models.TextField(blank=True)
     trackees =  models.ManyToManyField(Trackee, through='TrackedUrlInstance')
-    secret_id = models.CharField(max_length=32, editable=False,
-                                 default=_create_uuid, unique=True)
 
     def __unicode__(self):
         """Returns a unicode representation of a TrackedUrl."""
@@ -174,17 +170,6 @@ class TrackedUrl(models.Model):
         i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
         i.save()
         return i
-        
-    # def add_validator(self, validator_type, value):
-        # # does a validator with the given type and value already exist?
-        # qs = self.targetvalidator_set.filter(type=validator_type, value=value)
-        # if not qs.exists():
-            # v = TargetValidator(trackedurl=self, type=validator_type, 
-                                # value=value)
-            # v.save()
-        # else:
-            # v = qs[0]
-        # return v
         
 
 
@@ -250,15 +235,6 @@ class TrackedUrlInstance(models.Model):
     first_access = property(_first_access)
     recent_access = property(_recent_access)
     access_count = property(_access_count)
-    
-    # def validate_target(self, url):
-        # qs = self.trackedurl.targetvalidator_set.all()
-        # if qs.exists():
-            # return any( v(url) for v in qs )
-        # else:
-            # # Return True explicitly because any() on an empty sequence 
-            # # returns False.
-            # return True
             
     def generate_hashedurl(self, urltail):
         """Creates a hashed url appropriate for this TrackedUrlInstance.  The 
@@ -289,7 +265,8 @@ class TrackedUrlAccess(models.Model):
     # accessing the URL
     count =     models.IntegerField(default=0, validators=[validate_onezero])
     # TODO: make this length a configurable setting?
-    url =   models.CharField(max_length=3000, blank=True)
+    url =   models.CharField(max_length=app_settings.URLFIELD_LENGTH, 
+                             blank=True)
     
 
 #==============================================================================#
