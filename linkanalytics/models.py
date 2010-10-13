@@ -219,10 +219,9 @@ class TrackedUrlInstance(models.Model):
            url: the url used (*not* the url redirected to)
         """
         count = 0
-        time = None
+        time = datetime.datetime.now()
         if success:
             count = 1
-            time = datetime.datetime.now()
         a = TrackedUrlAccess(instance=self, time=time, count=count, url=url)
         a.save()
 
@@ -231,14 +230,16 @@ class TrackedUrlInstance(models.Model):
            object representing the first access of this TrackedUrlInstance, or 
            None if it has not yet been accessed.
         """
-        ag = self.trackedurlaccess_set.aggregate(models.Min('time'))
+        ag = self.trackedurlaccess_set.filter(count__gte=1) \
+                                      .aggregate(models.Min('time'))
         return ag['time__min']
     def _recent_access(self):
         """Getter for recent_access property.  Returns the TrackedUrlAccess 
            object representing the most recent access of this 
            TrackedUrlInstance, or None if it has not yet been accessed.
         """
-        ag = self.trackedurlaccess_set.aggregate(models.Max('time'))
+        ag = self.trackedurlaccess_set.filter(count__gte=1) \
+                                      .aggregate(models.Max('time'))
         return ag['time__max']
     def _access_count(self):
         """Getter for access_count property.  Returns the access count for this 
