@@ -292,45 +292,6 @@ class TrackedUrlAccess(models.Model):
     url =   models.CharField(max_length=3000, blank=True)
     
 
-# _VALIDATOR_TYPE_LITERAL = 0
-# _VALIDATOR_TYPE_REGEX = 1
-# _VALIDATOR_TYPE_FUNC = 2
-
-# _VALIDATOR_TYPES = (
-    # (_VALIDATOR_TYPE_LITERAL,   'Literal URL'),
-    # (_VALIDATOR_TYPE_REGEX,     'Regex'),
-    # (_VALIDATOR_TYPE_FUNC,      'Function'),
-    # )
-    
-# _targetvalidator_regex_cache = {}
-
-# def _get_targetvalidator_regex(s):
-    # if s not in _targetvalidator_regex_cache:
-        # _targetvalidator_regex_cache[s] = re.compile(s)
-    # return _targetvalidator_regex_cache[s]
-        
-    
-# class TargetValidator(models.Model):
-    # """"""
-    # trackedurl = models.ForeignKey(TrackedUrl)
-    # type =       models.IntegerField(choices=_VALIDATOR_TYPES)
-    # value =      models.CharField(max_length=3000)
-    
-    # def __call__(self, url):
-        # if self.type == _VALIDATOR_TYPE_LITERAL:
-            # if url == self.value:
-                # return True
-        # elif self.type == _VALIDATOR_TYPE_REGEX:
-            # r = _get_targetvalidator_regex(self.value)
-            # if r.search(url):
-                # return True
-        # elif self.type == _VALIDATOR_TYPE_FUNC:
-            # mname, dot, fname = self.value.rpartition('.')
-            # # do not catch ImportError here, let it go for debugging purposes
-            # m = __import__(mname, fromlist=[fname])
-            # return getattr(m, fname)(url)
-        # return False
-
 #==============================================================================#
 # import models from sub packages
 
