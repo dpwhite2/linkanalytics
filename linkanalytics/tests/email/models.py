@@ -33,8 +33,9 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
         
     def test_send_basic(self):
-        """Sends an email to no one"""
-        de = DraftEmail(fromemail='', subject='Subject')
+        """Sends an email to no one."""
+        
+        de = DraftEmail(fromemail='', subject='Subject', pixelimage=False)
         html = '<html><head></head><body></body></html>'
         de.message = html
         de.save()
@@ -49,10 +50,13 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(TrackedUrl.objects.count(), 1)
         self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
         
+        self.assertEquals(len(django_email.outbox), 0)
+        
     def test_send_single(self):
+        """Sends an email to a single recipient."""
         t = Trackee(username='user', emailaddress='user@example.com')
         t.save()
-        de = DraftEmail(fromemail='', subject='Subject')
+        de = DraftEmail(fromemail='', subject='Subject', pixelimage=False)
         html = '<html><head></head><body></body></html>'
         de.message = html
         de.save()
@@ -111,11 +115,6 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertNotEquals(src, None)
         
         url = urlex.hashedurl_pixelpng(uuid)
-        #urltail = urlreverse( 'targetview-pixelpng', 
-        #                      urlconf='linkanalytics.targeturls')
-        #urltail = urltail[1:] # remove leading '/'
-        #url = urlreverse( 'linkanalytics-accessview', 
-        #                  kwargs={'uuid': uuid, 'tailpath':urltail})
         
         self.assertEquals(src, '{0}{1}'.format(app_settings.URLBASE, url))
         

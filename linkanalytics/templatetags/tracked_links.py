@@ -2,14 +2,14 @@ from django import template
 import urlparse
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics import urlex
+from linkanalytics import urlex, app_settings
 
 register = template.Library()
 
 
 def create_trackedurl_tag(trailpath):
     s = '{{% trackedurl {linkidvar} "{tp}" %}}'
-    return s.format(linkidvar='linkid', tp=trailpath)
+    return s.format(linkidvar=app_settings.LINKID_VARNAME, tp=trailpath)
 
 class TrackNode(template.Node):
     pass
@@ -80,7 +80,7 @@ register.tag('track', track)
 class TrackedurlNode(template.Node):
     def __init__(self, linkid, trailpath):
         template.Node.__init__(self)
-        self.urlbase = template.Variable('urlbase')
+        self.urlbase = template.Variable(app_settings.URLBASE_VARNAME)
         self.linkid = template.Variable(linkid)
         self.trailpath = trailpath
         

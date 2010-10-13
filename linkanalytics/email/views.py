@@ -178,7 +178,7 @@ def viewEmailUnreadList(request, emailid):
     # TODO: if emailid is not found, do what?
     eml = Email.objects.get(pk=emailid)
     
-    itemiter = EmailReadIter(eml)
+    itemiter = EmailUnreadIter(eml)
     return _email_render_to_response('linkanalytics/email/whounread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))

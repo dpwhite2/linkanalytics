@@ -2,6 +2,7 @@ from django.template import Template, Context
 
 from linkanalytics.util.htmltotext import HTMLtoText
 from linkanalytics.util.htmldocument import HtmlDocument
+from linkanalytics import app_settings
 
 #==============================================================================#
 class EmailContent(object):
@@ -105,10 +106,10 @@ def email_instantiator(texttpl, htmltpl, urlbase):
     """
     ttext = Template('{% load tracked_links %}'+texttpl)
     thtml = Template('{% load tracked_links %}'+htmltpl)
-    ctx = Context({'urlbase': urlbase})
+    ctx = Context({app_settings.URLBASE_VARNAME: urlbase})
     
     def _instantiate_email(uuid):
-        ctx['linkid'] = uuid
+        ctx[app_settings.LINKID_VARNAME] = uuid
         return (ttext.render(ctx), thtml.render(ctx))
         
     return _instantiate_email

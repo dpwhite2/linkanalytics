@@ -17,7 +17,8 @@ class EmailAlreadySentError(Exception):
 
 def _create_trackedurl_for_email():
     """Creates a TrackedUrl to be used with a new email message."""
-    u = TrackedUrl(name='_email_{0}'.format(_create_uuid()))
+    fmt = app_settings.EMAIL_TRACKEDURL_NAMEFORMAT
+    u = TrackedUrl(name=fmt.format(_create_uuid()))
     u.save()
     return u
 
@@ -27,7 +28,8 @@ class Email(models.Model):
        etc, however, may not be modified."""
     fromemail =     models.EmailField(blank=True)
     trackedurl =    models.ForeignKey(TrackedUrl, editable=False)
-    subject =       models.CharField(max_length=256, editable=False)
+    subject =       models.CharField(editable=False, 
+                                max_length=app_settings.EMAIL_SUBJECT_LENGTH)
     txtmsg =        models.TextField(editable=False)
     htmlmsg =       models.TextField(editable=False)
     
@@ -122,10 +124,12 @@ class DraftEmail(models.Model):
        
     pending_recipients = models.ManyToManyField(Trackee, blank=True)
     fromemail =     models.EmailField(blank=True)
-    subject =       models.CharField(max_length=256, blank=True)
+    subject =       models.CharField(blank=True, 
+                                max_length=app_settings.EMAIL_SUBJECT_LENGTH)
     message =       models.TextField(blank=True)
     sent =          models.BooleanField(default=False)
-    pixelimage =    models.BooleanField(default=False)
+    pixelimage =    models.BooleanField(
+                            default=app_settings.EMAIL_DEFAULT_INCLUDE_PIXELIMG)
     
     htmlheader =    models.FilePathField(path=app_settings.EMAIL_HEADERSDIR,
                                    match=r'.*\.html',max_length=255,blank=True)
