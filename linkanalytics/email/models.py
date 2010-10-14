@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from django.db import models
 from django.core import mail
@@ -48,6 +49,17 @@ class Email(models.Model):
     def recipient_count(self):
         """Returns the number of recipients of this email."""
         return self.tracker.instances().count()
+        
+    def preview(self):
+        # Render the content but with pixelimages disabled.
+        urlbase = app_settings.URLBASE
+        einstantiator = _email.email_instantiator(self.txtmsg, self.htmlmsg, 
+                                            urlbase, disable_pixelimages=True)
+        text, html = einstantiator('0'*32)  # dummy uuid
+        # Grab and return the content of the body element.
+        m = re.search(r'<body>(?P<content>.*)</body>', html, re.DOTALL)
+        assert(m)
+        return m.group('content')
 
     def send(self, recipients):
         """Attempt to send the email.  This may be called on emails that have 
@@ -60,7 +72,7 @@ class Email(models.Model):
             return
         urlbase = app_settings.URLBASE
         einstantiator = _email.email_instantiator(self.txtmsg, self.htmlmsg, 
-                                                    urlbase)
+                                                  urlbase)
         
         # Note: msgs = list of django.core.mail.EmailMultiAlternatives
         msgs = []

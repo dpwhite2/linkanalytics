@@ -131,13 +131,14 @@ def compile_text_email(content, header='', footer=''):
 
 
 #==============================================================================#
-def email_instantiator(texttpl, htmltpl, urlbase):
+def email_instantiator(texttpl, htmltpl, urlbase, disable_pixelimages=False):
     """Returns a function that can be used to instantiate individual emails.  
        The function will take one argument, the uuid.
     """
     ttext = Template('{% load tracked_links %}'+texttpl)
     thtml = Template('{% load tracked_links %}'+htmltpl)
-    ctx = Context({app_settings.URLBASE_VARNAME: urlbase})
+    ctx = Context({ app_settings.URLBASE_VARNAME: urlbase,
+                    'ignore_pixelimages': disable_pixelimages })
     
     def _instantiate_email(uuid):
         ctx[app_settings.LINKID_VARNAME] = uuid

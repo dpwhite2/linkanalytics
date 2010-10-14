@@ -1,0 +1,21 @@
+{% extends "linkanalytics/email/base.html" %}
+
+{% block title %}Email: Sent Content{% endblock %}
+
+{% block headelem_xtra %}
+  <style type="text/css" media="screen">
+    .emailcontent {
+      border-top: solid 1px black;
+      padding: 1px;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <h2>Email Sent Content</h2>
+  <div class='emailcontent'>
+    {{ content|safe }}
+  </div>
+    
+  </table>
+{% endblock %}

@@ -41,7 +41,6 @@ class TrackPixelNode(TrackNode):
             trailpath = 'ppx'
         self.text = create_trackedurl_tag(trailpath)
     def render(self, context):
-        # Note: double braces are needed for 'format()' call.
         a = '{% if not ignore_pixelimages %}'
         b = '{% endif %}'
         return '{0}{1}{2}'.format(a, self.text, b)

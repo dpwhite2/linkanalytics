@@ -182,15 +182,38 @@ def viewEmailUnreadList(request, emailid):
     return _email_render_to_response('linkanalytics/email/whounread.html',
                              {'email': eml, 'items': itemiter },
                               context_instance=RequestContext(request))
+                
         
+class EmailRecipientIter(object):
+    """Iterate through the unread UrlInstances associated with the given 
+       email."""
+    def __init__(self, email):
+        self.tracker = email.tracker
+    def __iter__(self):
+        for instance in self.tracker.instances():
+            yield { 'instance': instance,
+                    'visitor': instance.visitor,
+                  }
+
 @login_required
 def viewEmailRecipientsList(request, emailid):
+    """The view which displays a list of all recipients who have been sent the 
+       given email."""
     # TODO: if emailid is not found, do what?
-    return HttpResponse('View: Under Construction.')
+    eml = Email.objects.get(pk=emailid)
+    
+    itemiter = EmailRecipientIter(eml)
+    return _email_render_to_response('linkanalytics/email/recipients.html',
+                             {'email': eml, 'items': itemiter },
+                              context_instance=RequestContext(request))
         
 @login_required
 def viewSentEmailContent(request, emailid):
     # TODO: if emailid is not found, do what?
-    return HttpResponse('View: Under Construction.')
+    eml = Email.objects.get(pk=emailid)
+    content = eml.preview()
+    return _email_render_to_response('linkanalytics/email/content_sent.html',
+                             {'email': eml, 'content': content },
+                              context_instance=RequestContext(request))
 
 #==============================================================================#
