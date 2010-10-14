@@ -7,12 +7,12 @@ from django.core.urlresolvers import reverse as urlreverse
 from linkanalytics.models import TrackedInstance, Visitor
 from linkanalytics.email.models import Email, DraftEmail
 
-from .. import base
+from linkanalytics.tests.email import base
 
 #==============================================================================#
 # Email view tests:
 
-class ViewEmailMain_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ViewEmailMain_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         self.create_users(1)
@@ -82,7 +82,7 @@ class ViewEmailMain_TestCase(base.LinkAnalytics_DBTestCaseBase):
             self.assertEquals(response.context['sent_count'], 1)
         
     
-class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ComposeEmail_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         self.create_users(1)
@@ -185,7 +185,7 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     # Save button
     # Send button
     
-class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ViewSentEmails_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         # When no emails exist
@@ -239,7 +239,7 @@ class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
             pks.sort()
             self.assertEquals(ids, pks)
     
-class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ViewDraftEmails_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         # When no emails exist
@@ -278,7 +278,7 @@ class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
     # When multi unsent email drafts exist
     
-class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ViewEmailRead_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         u = self.new_tracker('tracker')
@@ -327,7 +327,7 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
     # Check multiple emails read
     # what if the given email id does not exist?
             
-class ViewEmailUnread_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ViewEmailUnread_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         u = self.new_tracker('tracker')
@@ -343,7 +343,7 @@ class ViewEmailUnread_TestCase(base.LinkAnalytics_DBTestCaseBase):
             
     # what if the given email id does not exist?
     
-class CreateEmailContact_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class CreateEmailContact_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         self.create_users(1)
@@ -369,7 +369,7 @@ class CreateEmailContact_TestCase(base.LinkAnalytics_DBTestCaseBase):
     # Valid name and email
     # Save button
     
-class ViewEmailContacts_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class ViewEmailContacts_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
         self.create_users(1)

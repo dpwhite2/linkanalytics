@@ -10,12 +10,12 @@ from linkanalytics.email.models import DraftEmail, Email
 from linkanalytics import app_settings
 from linkanalytics import urlex
 
-from .. import base
+from linkanalytics.tests.email import base
 
 
 #==============================================================================#
 
-class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class Email_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     # This class tests both the Email and DraftEmail classes
     def test_compile_basic(self):
         de = DraftEmail(fromemail='', subject='Subject')

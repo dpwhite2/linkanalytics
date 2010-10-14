@@ -16,9 +16,9 @@ import base
 
 class AccessHashedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_hashValidation(self):        
-        u = self.new_tracker(name='Name1')
-        t = self.new_visitor(username='trackee1')
-        i = u.add_visitor(t)
+        t = self.new_tracker(name='Name1')
+        v = self.new_visitor(username='trackee1')
+        i = t.add_visitor(v)
         
         # This first try will contain a hash calculated for a different url.
         hash = urlex.generate_urlhash(i.uuid, '/linkanalytics/nonexistent_url/')
@@ -47,9 +47,9 @@ class CreateTrackee_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_local_redirect(self):
-        u = self.new_tracker('url1')
-        t = self.new_visitor('trackee1')
-        i = u.add_visitor(t)
+        t = self.new_tracker('url1')
+        v = self.new_visitor('trackee1')
+        i = t.add_visitor(v)
         
         url = urlex.hashedurl_redirect_local(i.uuid, 'linkanalytics/testurl/')
         response = self.client.get(url, follow=True)
@@ -67,9 +67,9 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(i.access_count, 1)
         
     def test_nonlocal_redirect(self):
-        u = self.new_tracker('url1')
-        t = self.new_visitor('trackee1')
-        i = u.add_visitor(t)
+        t = self.new_tracker('url1')
+        v = self.new_visitor('trackee1')
+        i = t.add_visitor(v)
         
         url = urlex.hashedurl_redirect_http(i.uuid, domain='www.google.com')
         
@@ -96,9 +96,9 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 class ViewHtml_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_email_receiptThankYou(self):
-        u = self.new_tracker('url1')
-        t = self.new_visitor('trackee1')
-        i = u.add_visitor(t)
+        t = self.new_tracker('url1')
+        v = self.new_visitor('trackee1')
+        i = t.add_visitor(v)
         
         path = 'email/access-thankyou.html'
         
@@ -113,9 +113,9 @@ class ViewPixelGif_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 class ViewPixelPng_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
-        u = self.new_tracker('url1')
-        t = self.new_visitor('trackee1')
-        i = u.add_visitor(t)
+        t = self.new_tracker('url1')
+        v = self.new_visitor('trackee1')
+        i = t.add_visitor(v)
         
         url = urlex.hashedurl_pixelpng(i.uuid)
         response = self.client.get(url)

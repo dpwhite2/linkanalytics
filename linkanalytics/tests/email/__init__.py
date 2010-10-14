@@ -1,4 +1,5 @@
-from linkanalytics.tests import base
+from linkanalytics.tests import base as testsbase
+from linkanalytics.tests.email import base
 
 #==============================================================================#
 # Test modules...
@@ -12,5 +13,5 @@ _testmodules = [views, models, email]
 for m in _testmodules:
     for name,val in m.__dict__.iteritems():
         if name.endswith('_TestCase') and \
-           issubclass(val, base.LinkAnalytics_TestCaseBase):
+           issubclass(val, testsbase.LinkAnalytics_TestCaseBase):
             globals()[name] = val

@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 
 from linkanalytics.models import Tracker, TrackedInstance, Visitor
 from linkanalytics.models import Access
-from linkanalytics.email.models import Email, DraftEmail, EmailRecipients
 
 # Disable Nose test autodiscovery for this module.
 __test__ = False
@@ -87,18 +86,18 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         Access.objects.all().delete()
         TrackedInstance.objects.all().delete()
         Visitor.objects.all().delete()
-        Email.objects.all().delete()
-        DraftEmail.objects.all().delete()
-        EmailRecipients.objects.all().delete()
         
         for user in self.users:
             user.delete()
             
-    def new_tracker(self, name):
+    def new_tracker(self, name=None):
         """Creates and saves a Tracker"""
+        if not name:
+            name = 'tracker{0}'.format(Tracker.objects.count()+1)
         t = Tracker(name=name)
         t.save()
         return t
+        
     def new_visitor(self, username=None):
         """Creates and saves a Visitor"""
         if not username:
