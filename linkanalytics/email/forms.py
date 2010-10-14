@@ -4,7 +4,7 @@ from django import forms
 from django.core.validators import validate_email
 from django.core.exceptions import ObjectDoesNotExist
 
-from linkanalytics.models import Trackee, resolve_emails
+from linkanalytics.models import Visitor, resolve_emails
 from linkanalytics.email.models import Email, DraftEmail
 
 #==============================================================================#
@@ -29,7 +29,7 @@ class ToEmailField(forms.Field):
         for part in value:
             if _re_username.match(part):
                 try:
-                    t = Trackee.objects.get(username=part)
+                    t = Visitor.objects.get(username=part)
                 except ObjectDoesNotExist:
                     msg = 'Recipient {0} was not found.'.format(part)
                     raise forms.ValidationError(msg)
@@ -70,10 +70,10 @@ class ComposeEmailForm(forms.ModelForm):
         
 
 class CreateContactForm(forms.ModelForm):
-    # Override the default Trackee emailaddress field, which is *not* required.
+    # Override the default Visitor emailaddress field, which is *not* required.
     emailaddress = forms.EmailField(required=True)
     class Meta:
-        model = Trackee
+        model = Visitor
         exclude = ['is_django_user',]
         
 

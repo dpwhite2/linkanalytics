@@ -6,7 +6,7 @@ import imghdr
 
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedUrlInstance, Trackee
+from linkanalytics.models import TrackedInstance, Visitor
 from linkanalytics import targetviews, urlex
 
 import base
@@ -14,11 +14,11 @@ import base
 #==============================================================================#
 # View tests:
 
-class AccessHashedTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
+class AccessHashedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_hashValidation(self):        
-        u = self.new_trackedurl(name='Name1')
-        t = self.new_trackee(username='trackee1')
-        i = u.add_trackee(t)
+        u = self.new_tracker(name='Name1')
+        t = self.new_visitor(username='trackee1')
+        i = u.add_visitor(t)
         
         # This first try will contain a hash calculated for a different url.
         hash = urlex.generate_urlhash(i.uuid, '/linkanalytics/nonexistent_url/')
@@ -47,9 +47,9 @@ class CreateTrackee_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_local_redirect(self):
-        u = self.new_trackedurl('url1')
-        t = self.new_trackee('trackee1')
-        i = u.add_trackee(t)
+        u = self.new_tracker('url1')
+        t = self.new_visitor('trackee1')
+        i = u.add_visitor(t)
         
         url = urlex.hashedurl_redirect_local(i.uuid, 'linkanalytics/testurl/')
         response = self.client.get(url, follow=True)
@@ -60,16 +60,16 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
                           (u'http://testserver/linkanalytics/testurl/',302))
         
         # reload the instance so its fields represent its current state
-        i = TrackedUrlInstance.objects.filter(uuid=i.uuid)[0]
+        i = TrackedInstance.objects.filter(uuid=i.uuid)[0]
         
         self.assertEquals(i.first_access.date(), datetime.date.today())
         self.assertEquals(i.recent_access.date(), datetime.date.today())
         self.assertEquals(i.access_count, 1)
         
     def test_nonlocal_redirect(self):
-        u = self.new_trackedurl('url1')
-        t = self.new_trackee('trackee1')
-        i = u.add_trackee(t)
+        u = self.new_tracker('url1')
+        t = self.new_visitor('trackee1')
+        i = u.add_visitor(t)
         
         url = urlex.hashedurl_redirect_http(i.uuid, domain='www.google.com')
         
@@ -87,7 +87,7 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(chain[0], (u'http://www.google.com/', 302))
         
         # reload the instance so its fields represent its current state
-        i = TrackedUrlInstance.objects.filter(uuid=i.uuid)[0]
+        i = TrackedInstance.objects.filter(uuid=i.uuid)[0]
         
         self.assertEquals(i.first_access.date(), datetime.date.today())
         self.assertEquals(i.recent_access.date(), datetime.date.today())
@@ -96,9 +96,9 @@ class ViewRedirect_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 class ViewHtml_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_email_receiptThankYou(self):
-        u = self.new_trackedurl('url1')
-        t = self.new_trackee('trackee1')
-        i = u.add_trackee(t)
+        u = self.new_tracker('url1')
+        t = self.new_visitor('trackee1')
+        i = u.add_visitor(t)
         
         path = 'email/access-thankyou.html'
         
@@ -113,9 +113,9 @@ class ViewPixelGif_TestCase(base.LinkAnalytics_DBTestCaseBase):
 
 class ViewPixelPng_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
-        u = self.new_trackedurl('url1')
-        t = self.new_trackee('trackee1')
-        i = u.add_trackee(t)
+        u = self.new_tracker('url1')
+        t = self.new_visitor('trackee1')
+        i = u.add_visitor(t)
         
         url = urlex.hashedurl_pixelpng(i.uuid)
         response = self.client.get(url)

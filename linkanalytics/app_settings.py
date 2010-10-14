@@ -88,9 +88,8 @@ EMAIL_DEFAULT_SUBJECT = getsettings('EMAIL_DEFAULT_SUBJECT', '[No Subject]')
 EMAIL_DEFAULT_INCLUDE_PIXELIMG = getsettings('EMAIL_DEFAULT_INCLUDE_PIXELIMG',
                                              True)
 
-# Format string used when creating TrackedUrls representing sent emails.
-EMAIL_TRACKEDURL_NAMEFORMAT = getsettings('EMAIL_TRACKEDURL_NAMEFORMAT',
-                                          '_email_{0}')
+# Format string used when creating Trackers representing sent emails.
+EMAIL_TRACKER_NAMEFORMAT = getsettings('EMAIL_TRACKER_NAMEFORMAT', '_email_{0}')
 
 #==============================================================================#
 

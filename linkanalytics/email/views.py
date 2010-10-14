@@ -4,7 +4,7 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import Trackee, resolve_emails
+from linkanalytics.models import Visitor, resolve_emails
 from linkanalytics.email.models import Email, DraftEmail
 from linkanalytics.email.forms import ComposeEmailForm, CreateContactForm
 
@@ -14,9 +14,9 @@ from linkanalytics.email.forms import ComposeEmailForm, CreateContactForm
 def _email_render_to_response(template, dictionary, context_instance):
     """Helper that adds context variables needed by all email views."""
     
-    sent_count = Email.objects.all().count()
-    draft_count = DraftEmail.objects.filter(sent=False).count()
-    contact_count = Trackee.objects.exclude(emailaddress='').count()
+    sent_count =    Email.objects.all().count()
+    draft_count =   DraftEmail.objects.filter(sent=False).count()
+    contact_count = Visitor.objects.exclude(emailaddress='').count()
     dictionary.update( {'sent_count': sent_count, 
                         'draft_count': draft_count, 
                         'contact_count': contact_count} )
@@ -74,7 +74,7 @@ def composeEmail(request, emailid=None):
             form = ComposeEmailForm(instance=DraftEmail.objects.get(pk=emailid))
         else:
             form = ComposeEmailForm()
-    contacts = Trackee.objects.exclude(emailaddress='')
+    contacts = Visitor.objects.exclude(emailaddress='')
     return _email_render_to_response('linkanalytics/email/compose.html',
                              {'form': form, 'emailid': emailid, 
                               'contacts': contacts},
@@ -99,7 +99,7 @@ def viewDraftEmails(request):
 def viewEmailContacts(request):
     """The view which displays a list of all contacts."""
     return _email_render_to_response('linkanalytics/email/contacts.html',
-                    { 'contacts': Trackee.objects.exclude(emailaddress='') },
+                    { 'contacts': Visitor.objects.exclude(emailaddress='') },
                     context_instance=RequestContext(request))
     
 @login_required
@@ -107,11 +107,11 @@ def createEmailContact(request, username=None):
     """The view in which one may create and/or edit a contact."""
     if request.method == 'POST': # If the form has been submitted...
         if username is not None:
-            t = Trackee.objects.get(username=username)
+            t = Visitor.objects.get(username=username)
             if not t.emailaddress:
                 return HttpResponse('Contacts must have an email address.') 
         else:
-            t = Trackee()
+            t = Visitor()
         form = CreateContactForm(request.POST, instance=t)
         if form.is_valid(): 
             form.save()
@@ -119,7 +119,7 @@ def createEmailContact(request, username=None):
             return HttpResponseRedirect(url)
     else:
         if username is not None:
-            t = Trackee.objects.get(username=username)
+            t = Visitor.objects.get(username=username)
             if not t.emailaddress:
                 return HttpResponse('Contacts must have an email address.') 
             form = CreateContactForm(instance=t)
@@ -140,11 +140,11 @@ def viewSingleSentEmail(request, emailid):
 class EmailReadIter(object):
     """Iterate through the read UrlInstances associated with the given email."""
     def __init__(self, email):
-        self.trackedurl = email.trackedurl
+        self.tracker = email.tracker
     def __iter__(self):
-        for instance in self.trackedurl.url_instances_read():
-            yield { 'urlinstance': instance,
-                    'trackee': instance.trackee,
+        for instance in self.tracker.instances_read():
+            yield { 'instance': instance,
+                    'visitor': instance.visitor,
                   }
         
 @login_required
@@ -164,11 +164,11 @@ class EmailUnreadIter(object):
     """Iterate through the unread UrlInstances associated with the given 
        email."""
     def __init__(self, email):
-        self.trackedurl = email.trackedurl
+        self.tracker = email.tracker
     def __iter__(self):
-        for instance in self.trackedurl.url_instances_unread():
-            yield { 'urlinstance': instance,
-                    'trackee': instance.trackee,
+        for instance in self.tracker.instances_unread():
+            yield { 'instance': instance,
+                    'visitor': instance.visitor,
                   }
         
 @login_required

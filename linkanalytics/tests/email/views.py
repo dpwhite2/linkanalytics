@@ -4,7 +4,7 @@
 
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedUrlInstance, Trackee
+from linkanalytics.models import TrackedInstance, Visitor
 from linkanalytics.email.models import Email, DraftEmail
 
 from .. import base
@@ -29,14 +29,14 @@ class ViewEmailMain_TestCase(base.LinkAnalytics_DBTestCaseBase):
             response = self.client.get(url)
             self.assertEquals(response.context['contact_count'], 0)
             
-            # Case 2: one trackee with an email
-            t = Trackee(username='withemail', emailaddress='user0@example.com')
+            # Case 2: one visitor with an email
+            t = Visitor(username='withemail', emailaddress='user0@example.com')
             t.save()
             response = self.client.get(url)
             self.assertEquals(response.context['contact_count'], 1)
             
-            # Case 3: one trackee with and one without an email
-            t = Trackee(username='withoutemail')
+            # Case 3: one visitor with and one without an email
+            t = Visitor(username='withoutemail')
             t.save()
             response = self.client.get(url)
             self.assertEquals(response.context['contact_count'], 1)
@@ -67,7 +67,7 @@ class ViewEmailMain_TestCase(base.LinkAnalytics_DBTestCaseBase):
             self.assertEquals(response.context['draft_count'], 1)
             
     def test_sent_count(self):
-        u = self.new_trackedurl('trackedurl')
+        u = self.new_tracker('tracker')
         self.create_users(1)
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-main')
@@ -76,7 +76,7 @@ class ViewEmailMain_TestCase(base.LinkAnalytics_DBTestCaseBase):
             self.assertEquals(response.context['sent_count'], 0)
             
             # Case 2: one sent email
-            e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+            e = Email(tracker=u, subject='X', txtmsg='Y', htmlmsg='Z')
             e.save()
             response = self.client.get(url)
             self.assertEquals(response.context['sent_count'], 1)
@@ -107,11 +107,11 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_to_existingEmailAddress(self):
         # A valid existing email address
         self.create_users(1)
-        t = Trackee(username='trackee', emailaddress='trackee@example.com')
+        t = Visitor(username='visitor', emailaddress='visitor@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
-            data = {'do_save':'', 'to':'trackee@example.com', 
+            data = {'do_save':'', 'to':'visitor@example.com', 
                     'message':'Message.'}
             response = self.client.post(url, data)
             
@@ -122,16 +122,16 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
             draft = qs[0]
             self.assertEquals(draft.pending_recipients.count(), 1)
             self.assertEquals(draft.pending_recipients.all()[0].emailaddress, 
-                              'trackee@example.com')
+                              'visitor@example.com')
         
     def test_to_existingUsername(self):
         # A valid existing username
         self.create_users(1)
-        t = Trackee(username='trackee', emailaddress='trackee@example.com')
+        t = Visitor(username='visitor', emailaddress='visitor@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
-            data = {'do_save':'', 'to':'trackee', 'message':'Message.'}
+            data = {'do_save':'', 'to':'visitor', 'message':'Message.'}
             response = self.client.post(url, data)
             
             self.assertEquals(response.status_code, 302)
@@ -141,12 +141,12 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
             draft = qs[0]
             self.assertEquals(draft.pending_recipients.count(), 1)
             self.assertEquals(draft.pending_recipients.all()[0].username, 
-                              'trackee')
+                              'visitor')
                               
     def test_to_nonExistentUsername(self):
         # A valid but non-existent username
         self.create_users(1)
-        t = Trackee(username='trackee', emailaddress='trackee@example.com')
+        t = Visitor(username='visitor', emailaddress='visitor@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
@@ -163,7 +163,7 @@ class ComposeEmail_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_to_nonExistentEmailaddress(self):
         # A valid but non-existent email
         self.create_users(1)
-        t = Trackee(username='trackee', emailaddress='trackee@example.com')
+        t = Visitor(username='visitor', emailaddress='visitor@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-compose')
@@ -210,8 +210,8 @@ class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_oneSent(self):
         # When an email was sent
         self.create_users(1)
-        u = self.new_trackedurl('trackedurl')
-        e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+        u = self.new_tracker('tracker')
+        e = Email(tracker=u, subject='X', txtmsg='Y', htmlmsg='Z')
         e.save()
         id = e.pk
         with self.scoped_login('user0', 'password'):
@@ -225,8 +225,8 @@ class ViewSentEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
         # When multiple emails were sent
         self.create_users(1)
         def sendEmail():
-            u = self.new_trackedurl('trackedurl')
-            e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+            u = self.new_tracker('tracker')
+            e = Email(tracker=u, subject='X', txtmsg='Y', htmlmsg='Z')
             e.save()
             return e.pk
         ids = [sendEmail() for i in range(3)]
@@ -264,7 +264,7 @@ class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_oneSent(self):
         # When an email has been sent, and therefore no unsent drafts exist
         self.create_users(1)
-        t = self.new_trackee('trackee')
+        t = self.new_visitor('visitor')
         d = DraftEmail(subject='X', message='My message.')
         d.save()
         d.pending_recipients.add(t)
@@ -281,8 +281,8 @@ class ViewDraftEmails_TestCase(base.LinkAnalytics_DBTestCaseBase):
 class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
-        u = self.new_trackedurl('trackedurl')
-        e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+        u = self.new_tracker('tracker')
+        e = Email(tracker=u, subject='X', txtmsg='Y', htmlmsg='Z')
         e.save()
         self.create_users(1)
         with self.scoped_login('user0', 'password'):
@@ -297,14 +297,14 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
             
     def test_oneRead(self):
         # Check email read
-        t = self.new_trackee('trackee')
+        t = self.new_visitor('visitor')
         d = DraftEmail(subject='X', message='My message.', pixelimage=True)
         d.save()
         d.pending_recipients.add(t)
         d.save()
         e = d.send()
         
-        qs = TrackedUrlInstance.objects.all()
+        qs = TrackedInstance.objects.all()
         self.assertEquals(qs.count(), 1)
         i = qs[0]
         i.on_access(True, 'the_url_goes_here')
@@ -321,7 +321,7 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
             itemiter = response.context['items']
             items = list(itemiter)
             self.assertEquals(len(items), 1)
-            self.assertEquals(items[0]['urlinstance'], i)
+            self.assertEquals(items[0]['instance'], i)
             
     # Check one email read and one not read
     # Check multiple emails read
@@ -330,8 +330,8 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_DBTestCaseBase):
 class ViewEmailUnread_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic(self):
         # Very basic test... just see that url exists.
-        u = self.new_trackedurl('trackedurl')
-        e = Email(trackedurl=u, subject='X', txtmsg='Y', htmlmsg='Z')
+        u = self.new_tracker('tracker')
+        e = Email(tracker=u, subject='X', txtmsg='Y', htmlmsg='Z')
         e.save()
         id = e.pk
         self.create_users(1)
@@ -355,11 +355,11 @@ class CreateEmailContact_TestCase(base.LinkAnalytics_DBTestCaseBase):
     def test_basic_editExisting(self):
         # Very basic test... just see that url exists.
         self.create_users(1)
-        t = Trackee(username='trackee', emailaddress='me@example.com')
+        t = Visitor(username='visitor', emailaddress='me@example.com')
         t.save()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-editcontact', 
-                             kwargs={'username':'trackee'})
+                             kwargs={'username':'visitor'})
             response = self.client.get(url)
             self.assertEquals(response.status_code, 200)
             

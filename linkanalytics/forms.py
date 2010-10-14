@@ -4,7 +4,7 @@ from django import forms
 from django.core.validators import validate_email
 from django.core.exceptions import ObjectDoesNotExist
 
-from linkanalytics.models import TrackedUrl, Trackee, TrackedUrlInstance
+from linkanalytics.models import Tracker, Visitor, TrackedInstance
 
 #==============================================================================#
 class TrackedUrlDefaultForm(forms.ModelForm):
@@ -13,12 +13,12 @@ class TrackedUrlDefaultForm(forms.ModelForm):
     # - create quick trackee from an email address 
     #       (but first check if email is present on an existing trackee)
     class Meta:
-        model = TrackedUrl
+        model = Tracker
         
 #==============================================================================#
 class TrackeeForm(forms.ModelForm):
     class Meta:
-        model = Trackee
+        model = Visitor
         exclude = ['is_django_user',]
 
 #==============================================================================#

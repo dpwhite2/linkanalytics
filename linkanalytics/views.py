@@ -8,7 +8,7 @@ from django.core.urlresolvers import resolve, Resolver404, reverse as urlreverse
 from django.core.exceptions import ObjectDoesNotExist
 
 
-from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
+from linkanalytics.models import Visitor, Tracker, TrackedInstance
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
@@ -28,9 +28,9 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     url = request.build_absolute_uri()
     if not tailpath.startswith('/'):
         tailpath = '/%s' % tailpath
-    # Retrieve the TrackedUrlInstance.
+    # Retrieve the TrackedInstance.
     try:
-        i = TrackedUrlInstance.objects.get(uuid=uuid)
+        i = TrackedInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
         i.on_access(success=False, url=url)
         raise Http404
@@ -56,7 +56,7 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
 @login_required
 def createTrackedUrl(request):
     if request.method == 'POST': # If the form has been submitted...
-        form = TrackedUrlDefaultForm(request.POST, instance=TrackedUrl())
+        form = TrackedUrlDefaultForm(request.POST, instance=Tracker())
         if form.is_valid(): # All validation rules pass
             # Process the data in form.cleaned_data
             form.save()
@@ -71,7 +71,7 @@ def createTrackedUrl(request):
 @login_required
 def createTrackee(request):
     if request.method == 'POST': # If the form has been submitted...
-        form = TrackeeForm(request.POST, instance=Trackee())
+        form = TrackeeForm(request.POST, instance=Visitor())
         if form.is_valid(): # All validation rules pass
             # Process the data in form.cleaned_data
             form.save()

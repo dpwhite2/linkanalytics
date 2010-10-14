@@ -16,7 +16,7 @@ from linkanalytics import app_settings
 # '/linkanalytics' portion.  The <URLBASE> part is dealt with elsewhere.
 #
 # The <HASH> is used to validate that a URL was created by Linkanalytics.
-# The <UUID> determines who is visiting a URL and which TrackedUrl is being 
+# The <UUID> determines who is visiting a URL and which Tracker is being 
 # visited.
 # The <URLTAIL> is redirected to the appropriate targetview via a targeturl 
 # conf.  It may contain forward slashes--everything after the UUID is the 

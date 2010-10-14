@@ -5,8 +5,8 @@ import datetime
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
-from linkanalytics.models import TrackedUrlAccess
+from linkanalytics.models import Tracker, TrackedInstance, Visitor
+from linkanalytics.models import Access
 from linkanalytics.email.models import Email, DraftEmail, EmailRecipients
 
 # Disable Nose test autodiscovery for this module.
@@ -83,11 +83,10 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
                 for i in range(n)
             ]
     def tearDown(self):
-        TrackedUrl.objects.all().delete()
-        TrackedUrlAccess.objects.all().delete()
-        TrackedUrlInstance.objects.all().delete()
-        #TrackedUrlTarget.objects.all().delete()
-        Trackee.objects.all().delete()
+        Tracker.objects.all().delete()
+        Access.objects.all().delete()
+        TrackedInstance.objects.all().delete()
+        Visitor.objects.all().delete()
         Email.objects.all().delete()
         DraftEmail.objects.all().delete()
         EmailRecipients.objects.all().delete()
@@ -95,16 +94,18 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         for user in self.users:
             user.delete()
             
-    def new_trackedurl(self, name):
-        """Creates and saves a TrackedUrl"""
-        u = TrackedUrl(name=name)
-        u.save()
-        return u
-    def new_trackee(self, username):
-        """Creates and saves a Trackee"""
-        t = Trackee(username=username)
+    def new_tracker(self, name):
+        """Creates and saves a Tracker"""
+        t = Tracker(name=name)
         t.save()
         return t
+    def new_visitor(self, username=None):
+        """Creates and saves a Visitor"""
+        if not username:
+            username = 'visitor{0}'.format(Visitor.objects.count()+1)
+        v = Visitor(username=username)
+        v.save()
+        return v
         
 #==============================================================================#
 # Use the following function to generate a TestSuite for a given module.  

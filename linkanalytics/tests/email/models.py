@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from django.core import mail as django_email
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
+from linkanalytics.models import Tracker, TrackedInstance, Visitor
 from linkanalytics.email.models import DraftEmail, Email
 from linkanalytics import app_settings
 from linkanalytics import urlex
@@ -28,9 +28,9 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(e.txtmsg, '')
         self.assertEqualsHtml(e.htmlmsg, html)
         
-        # There's only one TrackedUrl object so far
-        self.assertEquals(TrackedUrl.objects.count(), 1)
-        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
+        # There's only one Tracker object so far
+        self.assertEquals(Tracker.objects.count(), 1)
+        self.assertEquals(e.tracker, Tracker.objects.all()[0])
         
     def test_send_basic(self):
         """Sends an email to no one."""
@@ -46,21 +46,21 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(e.txtmsg, '')
         self.assertEqualsHtml(e.htmlmsg, html)
         
-        # There's only one TrackedUrl object so far
-        self.assertEquals(TrackedUrl.objects.count(), 1)
-        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
+        # There's only one Tracker object so far
+        self.assertEquals(Tracker.objects.count(), 1)
+        self.assertEquals(e.tracker, Tracker.objects.all()[0])
         
         self.assertEquals(len(django_email.outbox), 0)
         
     def test_send_single(self):
         """Sends an email to a single recipient."""
-        t = Trackee(username='user', emailaddress='user@example.com')
-        t.save()
+        v = Visitor(username='user', emailaddress='user@example.com')
+        v.save()
         de = DraftEmail(fromemail='', subject='Subject', pixelimage=False)
         html = '<html><head></head><body></body></html>'
         de.message = html
         de.save()
-        de.pending_recipients.add(t)
+        de.pending_recipients.add(v)
         de.save()
         e = de.send()
         
@@ -69,9 +69,9 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(e.txtmsg, '')
         self.assertEqualsHtml(e.htmlmsg, html)
         
-        # There's only one TrackedUrl object so far
-        self.assertEquals(TrackedUrl.objects.count(), 1)
-        self.assertEquals(e.trackedurl, TrackedUrl.objects.all()[0])
+        # There's only one Tracker object so far
+        self.assertEquals(Tracker.objects.count(), 1)
+        self.assertEquals(e.tracker, Tracker.objects.all()[0])
         
         self.assertEquals(len(django_email.outbox), 1)
         self.assertEquals(django_email.outbox[0].subject, 'Subject')
@@ -79,12 +79,12 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
                           ['user@example.com'])
                           
     def test_send_blankSubject(self):
-        t = Trackee(username='user', emailaddress='user@example.com')
-        t.save()
+        v = Visitor(username='user', emailaddress='user@example.com')
+        v.save()
         de = DraftEmail(fromemail='', pixelimage=False)
         de.message = 'My message.'
         de.save()
-        de.pending_recipients.add(t)
+        de.pending_recipients.add(v)
         de.save()
         e = de.send()
         
@@ -97,19 +97,19 @@ class Email_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
     def test_send_pixelimage(self):
         """Sends an email containing a pixelimage."""
-        t = Trackee(username='user', emailaddress='user@example.com')
-        t.save()
+        v = Visitor(username='user', emailaddress='user@example.com')
+        v.save()
         html = '<html><head></head><body></body></html>'
         de = DraftEmail(fromemail='', subject='Subject')
         de.message = html
         de.pixelimage = True
         de.save()
-        de.pending_recipients.add(t)
+        de.pending_recipients.add(v)
         de.save()
         eml = de.send()
         self.assertTrue(de.sent)
         
-        qs = TrackedUrlInstance.objects.filter(trackee=t)
+        qs = TrackedInstance.objects.filter(visitor=v)
         self.assertEquals(qs.count(), 1)
         uuid = qs[0].uuid
         

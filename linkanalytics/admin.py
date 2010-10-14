@@ -1,41 +1,41 @@
 from django.contrib import admin
 
-from linkanalytics.models import TrackedUrl, TrackedUrlInstance, Trackee
-from linkanalytics.models import TrackedUrlAccess
+from linkanalytics.models import Tracker, TrackedInstance, Visitor
+from linkanalytics.models import Access
 
 import linkanalytics.email.admin  # register email admin classes
 
-def trackees_count(obj):
-    return '%d'%obj.trackees.count()
-trackees_count.short_description = 'Trackees'
+def visitors_count(obj):
+    return '%d'%obj.visitors.count()
+visitors_count.short_description = 'Visitors'
 
 
-class TrackeesInline(admin.TabularInline):
-    model = TrackedUrl.trackees.through
+class VisitorsInline(admin.TabularInline):
+    model = Tracker.visitors.through
 
-class TrackedUrlAdmin(admin.ModelAdmin):
-    list_display = ('name', trackees_count, )
-    inlines = [ TrackeesInline ]
+class TrackerAdmin(admin.ModelAdmin):
+    list_display = ('name', visitors_count, )
+    inlines = [ VisitorsInline ]
     
 
-class TrackeeAdmin(admin.ModelAdmin):
+class VisitorAdmin(admin.ModelAdmin):
     list_display = ('username', 'emailaddress', 'first_name', 'last_name', 
                     'is_django_user', )
     
 
 
-class TrackedUrlAccessInline(admin.TabularInline):
-    model = TrackedUrlAccess
+class AccessInline(admin.TabularInline):
+    model = Access
 
-class TrackedUrlInstanceAdmin(admin.ModelAdmin):
-    list_display = ('trackedurl', 'trackee', 'uuid', 'notified', )
-    inlines = [ TrackedUrlAccessInline, ]
+class TrackedInstanceAdmin(admin.ModelAdmin):
+    list_display = ('tracker', 'visitor', 'uuid', 'notified', )
+    inlines = [ AccessInline, ]
     
 
 
-admin.site.register(TrackedUrl, TrackedUrlAdmin)
-admin.site.register(TrackedUrlInstance, TrackedUrlInstanceAdmin)
-admin.site.register(Trackee, TrackeeAdmin)
+admin.site.register(Tracker, TrackerAdmin)
+admin.site.register(TrackedInstance, TrackedInstanceAdmin)
+admin.site.register(Visitor, VisitorAdmin)
 
 
 

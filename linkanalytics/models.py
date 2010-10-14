@@ -30,25 +30,25 @@ def validate_onezero(value):
 #==============================================================================#
 # Design:
 #
-# A *TrackedUrl* represents a url whose accesses are tracked.
+# A *Tracker* represents a url whose accesses are tracked.
 
-# Each TrackedUrl is associated with zero or more *TrackedUrlInstances*.  Each 
+# Each Tracker is associated with zero or more *TrackedInstances*.  Each 
 # of those instances tracks when a single user accesses a single url.  A
-# TrackedUrlInstance is associated with exactly one TrackedUrl and one user.
+# TrackedInstance is associated with exactly one Tracker and one user.
 
-# A *Trackee* is the actor whose url accesses are tracked.  Trackees and
-# TrackedUrls have a many-to-many relationship through the TrackedUrlInstance
+# A *Visitor* is the actor whose url accesses are tracked.  Visitors and
+# Trackers have a many-to-many relationship through the TrackedInstance
 # class.
 
-# Trackees and TrackedUrls are created by the administrator.
-# TrackedUrlInstances are created by the application when a Trackee is assigned
-# to a TrackedUrl.
+# Visitors and Trackers are created by the administrator.
+# TrackedInstances are created by the application when a Visitor is assigned
+# to a Tracker.
 
 _re_email_username_replace = re.compile(r'[^_\w\d]')
 
-class Trackee(models.Model):
+class Visitor(models.Model):
     """The 'actor' whose visits to particular URLs are tracked by 
-       Linkanalytics.  One Trackee may be tracked through any number of URLs. 
+       Linkanalytics.  One Visitor may be tracked through any number of URLs. 
     """
     username =          models.CharField(max_length=64, unique=True)
     first_name =        models.CharField(max_length=64, blank=True)
@@ -59,21 +59,21 @@ class Trackee(models.Model):
     is_django_user =    models.BooleanField(default=False)
 
     def __unicode__(self):
-        """Returns a unicode representation of a Trackee."""
+        """Returns a unicode representation of a Visitor."""
         return u'%s' % self.username
 
-    def url_instances(self):
-        """A QuerySet of all TrackedUrlInstances which link to this Trackee."""
-        return self.trackedurlinstance_set.all()
+    def instances(self):
+        """A QuerySet of all TrackedInstances which link to this Visitor."""
+        return self.trackedinstance_set.all()
     def urls(self):
-        """A QuerySet of all TrackedUrls which link to this Trackee."""
-        return self.trackedurl_set.all()
+        """A QuerySet of all Trackers which link to this Visitor."""
+        return self.tracker_set.all()
     
     @staticmethod
     def from_django_user(djuser, comments=""):
-        """Create a Trackee from the given Django User object."""
+        """Create a Visitor from the given Django User object."""
         assert isinstance(djuser, User)
-        return Trackee( username=       djuser.username,
+        return Visitor( username=       djuser.username,
                         first_name=     djuser.first_name,
                         last_name=      djuser.last_name,
                         emailaddress=   djuser.email,
@@ -82,15 +82,15 @@ class Trackee(models.Model):
                         
     @staticmethod
     def from_email(email, comments=""):
-        """Create a Trackee from the given email address."""
+        """Create a Visitor from the given email address."""
         basename = _re_email_username_replace.sub('_', email)
         name = basename
         i = 0
         # Append integer until username is unique.
-        while Trackee.objects.filter(username=name).exists():
+        while Visitor.objects.filter(username=name).exists():
             name = '{0}{1}'.format(basename, i)
             i += 1
-        return Trackee( username=       name,
+        return Visitor( username=       name,
                         emailaddress=   email,
                         comments=       comments )
     
@@ -104,23 +104,23 @@ _re_email = re.compile(_EMAIL)
 _re_emailsplit = re.compile(r'[\s,]+')
 
 def resolve_emails(parts):
-    """Convert a sequence of emails and/or usernames into Trackees."""
+    """Convert a sequence of emails and/or usernames into Visitors."""
     trackees = set()
     unknown_emails = set()
     for em in parts:
         if em.find('@')!=-1:
             # this is an email address
-            qs = Trackee.objects.filter(emailaddress=em)
+            qs = Visitor.objects.filter(emailaddress=em)
             if qs.exists():
                 trackees.add(qs[0])
             else:
-                t = Trackee.from_email(em)
+                t = Visitor.from_email(em)
                 t.save()
                 trackees.add(t)
         else:
             # The ComposeEmail form validates usernames, so the following 
             # should never raise an ObjectDoesNotExist exception.
-            trackees.add(Trackee.objects.get(username=em))
+            trackees.add(Visitor.objects.get(username=em))
     return { 'trackees':trackees, 'unknown_emails':unknown_emails }
     
 def _create_uuid():
@@ -128,74 +128,74 @@ def _create_uuid():
     return uuid.uuid4().hex
 
     
-class TrackedUrl(models.Model):
+class Tracker(models.Model):
     """A group of urls whose accesses are tracked by LinkAnalytics.  The 
-       TrackedUrl object is *not* the same as the physical URL which is 
+       Tracker object is *not* the same as the physical URL which is 
        accessed.  Instead, a unique id is associated with a 
-       (TrackedUrl, Trackee) pair--whenever that unique id is accessed, the 
-       Trackee is considered to have accessed the TrackedUrl.  This places no 
-       restrictions on where the Trackee is redirected to after the access.
+       (Tracker, Visitor) pair--whenever that unique id is accessed, the 
+       Visitor is considered to have accessed the Tracker.  This places no 
+       restrictions on where the Visitor is redirected to after the access.
     """
     name =      models.CharField(max_length=256)
     comments =  models.TextField(blank=True)
-    trackees =  models.ManyToManyField(Trackee, through='TrackedUrlInstance')
+    visitors =  models.ManyToManyField(Visitor, through='TrackedInstance')
 
     def __unicode__(self):
-        """Returns a unicode representation of a TrackedUrl."""
+        """Returns a unicode representation of a Tracker."""
         return u'%s' % self.name
 
-    def url_instances(self):
-        """A QuerySet of all TrackedUrlInstances associated with this 
-           TrackedUrl"""
-        return self.trackedurlinstance_set.all()
+    def instances(self):
+        """A QuerySet of all TrackedInstances associated with this 
+           Tracker"""
+        return self.trackedinstance_set.all()
 
-    def url_instances_read(self):
-        """A QuerySet of all TrackedUrlInstances associated with this 
-           TrackedUrl which have been accessed (or 'read')."""
-        # instances containing TrackedUrlAccesses with a count value at least 1
-        return self.trackedurlinstance_set.annotate(
-                        num_accesses=models.Count('trackedurlaccess__count')
+    def instances_read(self):
+        """A QuerySet of all TrackedInstances associated with this 
+           Tracker which have been accessed (or 'read')."""
+        # instances containing Accesses with a count value at least 1
+        return self.trackedinstance_set.annotate(
+                        num_accesses=models.Count('access__count')
                     ).filter(num_accesses__gt=0)
 
-    def url_instances_unread(self):
-        """A QuerySet of all TrackedUrlInstances associated with this 
-           TrackedUrl which have not been accessed (or 'not read')."""
-        return self.trackedurlinstance_set.annotate(
-                        num_accesses=models.Count('trackedurlaccess__count')
+    def instances_unread(self):
+        """A QuerySet of all TrackedInstances associated with this 
+           Tracker which have not been accessed (or 'not read')."""
+        return self.trackedinstance_set.annotate(
+                        num_accesses=models.Count('access__count')
                     ).filter(num_accesses=0)
 
-    def add_trackee(self, trackee):
-        """Creates a TrackedUrlInstance associating the given Trackee with this 
-           TrackedUrl.  The TrackedUrlInstance is saved and returned."""
-        i = TrackedUrlInstance(trackedurl=self, trackee=trackee)
+    def add_visitor(self, visitor):
+        """Creates a TrackedInstance associating the given Visitor with this 
+           Tracker.  The TrackedInstance is saved and returned."""
+        i = TrackedInstance(tracker=self, visitor=visitor)
         i.save()
         return i
         
 
 
-class TrackedUrlInstance(models.Model):
-    """The class which links a Trackee and a TrackedUrl.  It is through this 
+class TrackedInstance(models.Model):
+    """The class which links a Visitor and a Tracker.  It is through this 
        class (and owned objects) that access statistics are kept."""
-    trackedurl =    models.ForeignKey(TrackedUrl)
-    trackee =       models.ForeignKey(Trackee)
+    tracker =       models.ForeignKey(Tracker)
+    visitor =       models.ForeignKey(Visitor)
     uuid =          models.CharField(max_length=32, editable=False, 
                                      default=_create_uuid, unique=True)
     notified =      models.DateField(null=True, blank=True)
 
     class Meta:
-        unique_together = (("trackedurl", "trackee", ),)
+        unique_together = (("tracker", "visitor", ),)
 
     def __unicode__(self):
-        """Returns a unicode representation of a TrackedUrlInstance."""
-        return u'%s, %s' % (self.trackedurl, self.trackee)
+        """Returns a unicode representation of a TrackedInstance."""
+        return u'%s, %s' % (self.tracker, self.visitor)
 
     def was_accessed(self):
-        """Returns True if this TrackedUrlInstance has been accessed; returns 
+        """Returns True if this TrackedInstance has been accessed; returns 
            False otherwise."""
         return self.access_count > 0
 
     def on_access(self, success, url):
-        """Call to indicate that the TrackedUrlInstance has been accessed.  
+        """Call to indicate that the TrackedInstance has been accessed.  
            This is usually called from within a view function.
             
            success: boolean that indicates if URL access occurred with no errors
@@ -205,30 +205,30 @@ class TrackedUrlInstance(models.Model):
         time = datetime.datetime.now()
         if success:
             count = 1
-        a = TrackedUrlAccess(instance=self, time=time, count=count, url=url)
+        a = Access(instance=self, time=time, count=count, url=url)
         a.save()
 
     def _first_access(self):
-        """Getter for first_access property.  Returns the TrackedUrlAccess 
-           object representing the first access of this TrackedUrlInstance, or 
+        """Getter for first_access property.  Returns the Access 
+           object representing the first access of this TrackedInstance, or 
            None if it has not yet been accessed.
         """
-        ag = self.trackedurlaccess_set.filter(count__gte=1) \
-                                      .aggregate(models.Min('time'))
+        ag = self.access_set.filter(count__gte=1).aggregate(models.Min('time'))
         return ag['time__min']
+        
     def _recent_access(self):
-        """Getter for recent_access property.  Returns the TrackedUrlAccess 
+        """Getter for recent_access property.  Returns the Access 
            object representing the most recent access of this 
-           TrackedUrlInstance, or None if it has not yet been accessed.
+           TrackedInstance, or None if it has not yet been accessed.
         """
-        ag = self.trackedurlaccess_set.filter(count__gte=1) \
-                                      .aggregate(models.Max('time'))
+        ag = self.access_set.filter(count__gte=1).aggregate(models.Max('time'))
         return ag['time__max']
+        
     def _access_count(self):
         """Getter for access_count property.  Returns the access count for this 
-           TrackedUrlInstance.
+           TrackedInstance.
         """
-        tset = self.trackedurlaccess_set
+        tset = self.access_set
         r = tset.aggregate(models.Sum('count'))['count__sum']
         return r  if r else  0  # handles case where r is None
     
@@ -237,13 +237,13 @@ class TrackedUrlInstance(models.Model):
     access_count = property(_access_count)
             
     def generate_hashedurl(self, urltail):
-        """Creates a hashed url appropriate for this TrackedUrlInstance.  The 
+        """Creates a hashed url appropriate for this TrackedInstance.  The 
            urltail is the portion of the url that will appear after the uuid.
         """
         return urlex.create_hashedurl(self.uuid, urltail)
         
     def generate_hash(self, data):
-        """Creates a hash value appropriate for this TrackedUrlInstance.  The 
+        """Creates a hash value appropriate for this TrackedInstance.  The 
            data parameter is the value that should appear after the uuid.
         """
         return urlex.generate_urlhash(self.uuid, data)
@@ -256,10 +256,10 @@ class TrackedUrlInstance(models.Model):
         return hash == newhash
     
 
-class TrackedUrlAccess(models.Model):
+class Access(models.Model):
     """Records a single access (possibly unsuccessful) of the associated 
-       TrackedUrlInstance."""
-    instance =  models.ForeignKey(TrackedUrlInstance)
+       TrackedInstance."""
+    instance =  models.ForeignKey(TrackedInstance)
     time =      models.DateTimeField(null=True, blank=True)
     # Should always be 0 or 1.  Zero indicates an error occurred while 
     # accessing the URL

@@ -15,11 +15,11 @@
     
     {% for item in items %}
     <tr>
-      <td>{{ item.trackee.emailaddress }}</td>
-      <td>{{ item.urlinstance.notified }}</td>
-      <td>{{ item.urlinstance.first_access }}</td>
-      <td>{{ item.urlinstance.recent_access }}</td>
-      <td>{{ item.urlinstance.access_count }}</td>
+      <td>{{ item.visitor.emailaddress }}</td>
+      <td>{{ item.instance.notified }}</td>
+      <td>{{ item.instance.first_access }}</td>
+      <td>{{ item.instance.recent_access }}</td>
+      <td>{{ item.instance.access_count }}</td>
     </tr>
     {% endfor %}
     

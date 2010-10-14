@@ -4,8 +4,8 @@ from django.db import models
 from django.core import mail
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 
-from linkanalytics.models import Trackee, TrackedUrl, TrackedUrlInstance
-from linkanalytics.models import TrackedUrlAccess, _create_uuid
+from linkanalytics.models import Visitor, Tracker, TrackedInstance
+from linkanalytics.models import Access, _create_uuid
 from linkanalytics.email import _email
 from linkanalytics import app_settings
 
@@ -15,10 +15,10 @@ from linkanalytics import app_settings
 class EmailAlreadySentError(Exception):
     """An attempt was made to send a DraftEmail object that was already sent."""
 
-def _create_trackedurl_for_email():
-    """Creates a TrackedUrl to be used with a new email message."""
-    fmt = app_settings.EMAIL_TRACKEDURL_NAMEFORMAT
-    u = TrackedUrl(name=fmt.format(_create_uuid()))
+def _create_tracker_for_email():
+    """Creates a Tracker to be used with a new email message."""
+    fmt = app_settings.EMAIL_TRACKER_NAMEFORMAT
+    u = Tracker(name=fmt.format(_create_uuid()))
     u.save()
     return u
 
@@ -27,7 +27,7 @@ class Email(models.Model):
        except to add more recipients.  Its message, subject, from-email, 
        etc, however, may not be modified."""
     fromemail =     models.EmailField(blank=True)
-    trackedurl =    models.ForeignKey(TrackedUrl, editable=False)
+    tracker =       models.ForeignKey(Tracker, editable=False)
     subject =       models.CharField(editable=False, 
                                 max_length=app_settings.EMAIL_SUBJECT_LENGTH)
     txtmsg =        models.TextField(editable=False)
@@ -39,21 +39,21 @@ class Email(models.Model):
     
     def read_count(self):
         """Returns the number of recipients who have read this email."""
-        return self.trackedurl.url_instances_read().count()
+        return self.tracker.instances_read().count()
     
     def unread_count(self):
         """Returns the number of recipients who have not read this email."""
-        return self.trackedurl.url_instances_unread().count()
+        return self.tracker.instances_unread().count()
         
     def recipient_count(self):
         """Returns the number of recipients of this email."""
-        return self.trackedurl.url_instances().count()
+        return self.tracker.instances().count()
 
     def send(self, recipients):
         """Attempt to send the email.  This may be called on emails that have 
            already been sent.
         
-           recipients: A sequence of Trackee objects who will be sent this 
+           recipients: A sequence of Visitor objects who will be sent this 
                        message.
         """
         if not recipients or not recipients.exists():
@@ -68,8 +68,8 @@ class Email(models.Model):
         
         # Build the emails
         for recipient in recipients:
-            i = TrackedUrlInstance(trackedurl=self.trackedurl, 
-                                   trackee=recipient)
+            i = TrackedInstance(tracker=self.tracker, 
+                                visitor=recipient)
             i.save()
             text, html = einstantiator(i.uuid)
             
@@ -122,7 +122,7 @@ class DraftEmail(models.Model):
        DraftEmail object may not be modified, and its pending_recipients become 
        the first recipients of the Email message."""
        
-    pending_recipients = models.ManyToManyField(Trackee, blank=True)
+    pending_recipients = models.ManyToManyField(Visitor, blank=True)
     fromemail =     models.EmailField(blank=True)
     subject =       models.CharField(blank=True, 
                                 max_length=app_settings.EMAIL_SUBJECT_LENGTH)
@@ -194,8 +194,8 @@ class DraftEmail(models.Model):
         if not self.subject:
             self.subject = app_settings.EMAIL_DEFAULT_SUBJECT
         text, html = _email.compile_email(self.message, **kwargs)
-        u = _create_trackedurl_for_email()
-        email_model = Email( fromemail=self.fromemail, trackedurl=u,
+        u = _create_tracker_for_email()
+        email_model = Email( fromemail=self.fromemail, tracker=u,
                              subject=self.subject, txtmsg=text, htmlmsg=html )
 
         return email_model
@@ -212,13 +212,13 @@ class DraftEmail(models.Model):
 
 
 class EmailRecipients(models.Model):
-    """A collection of Trackees to whom an Email has been sent.  Whenever an 
+    """A collection of Visitors to whom an Email has been sent.  Whenever an 
        Email is sent, its recipients are added to a new EmailRecipients object.  
        Therefore, a single Email may be associated with more than one 
        EmailRecipients object.
     """
     email =         models.ForeignKey(Email)
-    recipients =    models.ManyToManyField(Trackee)
+    recipients =    models.ManyToManyField(Visitor)
     datesent =      models.DateField()
     
     class Meta:
