@@ -23,6 +23,8 @@ urlpatterns = patterns('linkanalytics',
                                         {}, 'targetview-html'),
     (r'^gpx/?$', 'targetviews.targetview_pixelgif', {}, 'targetview-pixelgif'),
     (r'^ppx/?$', 'targetviews.targetview_pixelpng', {}, 'targetview-pixelpng'),
+    
+    (r'^email/', include('linkanalytics.email.targeturls')),
 )
 
 #==============================================================================#

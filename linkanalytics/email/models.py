@@ -48,18 +48,20 @@ class Email(models.Model):
         
     def recipient_count(self):
         """Returns the number of recipients of this email."""
-        return self.tracker.instances().count()
-        
-    def preview(self):
-        # Render the content but with pixelimages disabled.
+        return self.tracker.instances().count()    
+    
+    def render(self, uuid, disable_pixelimages=True):
+        """ Render the content but with pixelimages disabled by default.  The 
+            given uuid is not validated, so a dummy uuid can be used to create 
+            previews. """
         urlbase = app_settings.URLBASE
         einstantiator = _email.email_instantiator(self.txtmsg, self.htmlmsg, 
-                                            urlbase, disable_pixelimages=True)
-        text, html = einstantiator('0'*32)  # dummy uuid
+                                     urlbase, 
+                                     disable_pixelimages=disable_pixelimages)
+        text, html = einstantiator(uuid)
         # Grab and return the content of the body element.
         m = re.search(r'<body>(?P<content>.*)</body>', html, re.DOTALL)
-        assert(m)
-        return m.group('content')
+        return m.group('content')    
 
     def send(self, recipients):
         """Attempt to send the email.  This may be called on emails that have 

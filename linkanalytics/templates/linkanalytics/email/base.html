@@ -39,11 +39,12 @@
   {% block sidebar %}
     <h3>Menu:</h3>
     <ul>
-      <li><a href="/linkanalytics/email/">Email Home</a></li>
-      <li><a href="/linkanalytics/email/compose/">Compose</a></li>
-      <li><a href="/linkanalytics/email/viewsent/">Sent</a> ({{ sent_count }})</li>
-      <li><a href="/linkanalytics/email/viewdrafts/">Drafts</a> ({{ draft_count }})</li>
-      <li><a href="/linkanalytics/email/contacts/">Contacts</a> ({{ contact_count }})</li>
+      <li><a href="{% url linkanalytics.email.views.viewEmail %}">Email Home</a></li>
+      <li><a href="{% url linkanalytics.email.views.composeEmail %}">Compose</a></li>
+      <li><a href="{% url linkanalytics.email.views.viewSentEmails %}">Sent</a> ({{ sent_count }})</li>
+      <li><a href="{% url linkanalytics.email.views.viewDraftEmails %}">Drafts</a> ({{ draft_count }})</li>
+      <li><a href="{% url linkanalytics.email.views.viewEmailContacts %}">Contacts</a> ({{ contact_count }})</li>
+      <li><a href="{% url linkanalytics.email.views.editEmailHeadersFooters %}">Headers and Footers</a></li>
     </ul>
   {% endblock %}
   </div>
