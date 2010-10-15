@@ -12,7 +12,6 @@ from linkanalytics import urlex
 
 from linkanalytics.tests.email import base
 
-
 #==============================================================================#
 
 class Email_TestCase(base.LinkAnalytics_EmailTestCaseBase):

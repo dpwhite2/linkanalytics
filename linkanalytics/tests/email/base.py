@@ -2,7 +2,6 @@ from linkanalytics.email.models import Email, DraftEmail, EmailRecipients
 
 from linkanalytics.tests import base
 
-
 #==============================================================================#
 class LinkAnalytics_EmailTestCaseBase(base.LinkAnalytics_DBTestCaseBase):
     """Base class for all linkanalytics.email tests involving database access.  

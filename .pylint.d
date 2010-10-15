@@ -33,7 +33,12 @@ load-plugins=
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
-disable=E1101
+
+# Disabled messages: 
+#   E1101 - object has no member named XXX
+#   W0232 - no __init__ method
+#   R0903 - too few public methods
+disable=E1101,W0232,R0903,
 
 
 [REPORTS]
@@ -99,7 +104,7 @@ module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 const-rgx=(([A-Z_][A-Z0-9_]*)|([a-z_][a-z0-9_]*)|(__.*__))$
 
 # Regular expression which should only match correct class names
-class-rgx=[A-Z_][a-zA-Z0-9]+(_TestCase)?$
+class-rgx=[A-Z_][a-zA-Z0-9]+((_[A-Za-z0-9]TestCaseBase)|(_TestCase))?$
 
 # Regular expression which should only match correct function names
 function-rgx=([a-z_][a-z0-9_]{2,30})|(test_[A-Za-z0-9_]+)$

@@ -3,6 +3,9 @@ from linkanalytics import urlex
 
 from .. import base
 
+# Disable no __init__ method error:
+# pylint: disable=W0232
+
 #==============================================================================#
 
 class CompileEmail_TestCase(base.LinkAnalytics_TestCaseBase):
