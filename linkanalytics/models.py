@@ -48,7 +48,8 @@ _re_email_username_replace = re.compile(r'[^_\w\d]')
 
 class Visitor(models.Model):
     """The 'actor' whose visits to particular URLs are tracked by 
-       Linkanalytics.  One Visitor may be tracked through any number of URLs. 
+       Linkanalytics.  One Visitor may be tracked through any number of 
+       trackers. 
     """
     username =          models.CharField(max_length=64, unique=True)
     first_name =        models.CharField(max_length=64, blank=True)
@@ -194,6 +195,18 @@ class Tracker(models.Model):
             return t
         
 
+_ACCESS_SUCCESS = 1
+_ACCESS_FAILURE_UUID = 2
+_ACCESS_FAILURE_HASH = 3
+_ACCESS_ERROR_TARGETVIEW = 4
+
+_ACCESS_RESULTS = (
+    (_ACCESS_SUCCESS,           'Success'),
+    (_ACCESS_FAILURE_UUID,      'Failure: unknown uuid'),
+    (_ACCESS_FAILURE_HASH,      'Failure: bad hash value'),
+    (_ACCESS_ERROR_TARGETVIEW,  'Error in targetview'),
+    )
+
 
 class TrackedInstance(models.Model):
     """The class which links a Visitor and a Tracker.  It is through this 
@@ -216,18 +229,20 @@ class TrackedInstance(models.Model):
            False otherwise."""
         return self.access_count > 0
 
-    def on_access(self, success, url):
+    def on_access(self, result, url):
         """Call to indicate that the TrackedInstance has been accessed.  
            This is usually called from within a view function.
             
-           success: boolean that indicates if URL access occurred with no errors
+           result: integer that indicates if the access was successful or why 
+                   it failed.  See _ACCESS_RESULTS tuple.
            url: the url used (*not* the url redirected to)
         """
         count = 0
         time = datetime.datetime.now()
-        if success:
+        if result == _ACCESS_SUCCESS:
             count = 1
-        a = Access(instance=self, time=time, count=count, url=url)
+        a = Access(instance=self, time=time, count=count, url=url, 
+                   result=result)
         a.save()
 
     def _first_access(self):
@@ -299,9 +314,9 @@ class Access(models.Model):
     # Should always be 0 or 1.  Zero indicates an error occurred while 
     # accessing the URL
     count =     models.IntegerField(default=0, validators=[validate_onezero])
-    # TODO: make this length a configurable setting?
-    url =   models.CharField(max_length=app_settings.URLFIELD_LENGTH, 
+    url =       models.CharField(max_length=app_settings.URLFIELD_LENGTH, 
                              blank=True)
+    result =    models.SmallIntegerField(choices=_ACCESS_RESULTS)
     
 
 #==============================================================================#

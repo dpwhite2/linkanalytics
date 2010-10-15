@@ -9,6 +9,8 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 from linkanalytics.models import Visitor, Tracker, TrackedInstance
+from linkanalytics.models import _ACCESS_SUCCESS, _ACCESS_FAILURE_UUID
+from linkanalytics.models import _ACCESS_FAILURE_HASH, _ACCESS_ERROR_TARGETVIEW
 from linkanalytics.forms import TrackedUrlDefaultForm, TrackeeForm
 from linkanalytics import app_settings
 
@@ -35,27 +37,34 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
         i = TrackedInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
         # record failed access in special TrackedInstance
-        TrackedInstance.unknown().on_access(success=False, url=url)
+        TrackedInstance.unknown().on_access(result=_ACCESS_FAILURE_UUID, 
+                                            url=url)
         raise Http404
     
     # Validate the URL against the hash value.
     if not i.match_hash(hash, tailpath):
-        i.on_access(success=False, url=url)
+        i.on_access(result=_ACCESS_FAILURE_HASH, url=url)
         raise Http404
     
-    # Call the targetview function.
+    # Call the targetview function (represented by 'viewfunc')
     try:
         viewfunc, args, kwargs = resolve(tailpath, 
                                          urlconf=app_settings.TARGETS_URLCONF)
         response = viewfunc(request, uuid, *args, **kwargs)
-        # record access only *after* viewfunc() returned
-        i.on_access(success=True, url=url)
     except Exception:
-        i.on_access(success=False, url=url)
+        i.on_access(result=_ACCESS_ERROR_TARGETVIEW, url=url)
         raise
+        
+    # If we get here, the target viewfunc returned a response.  But check the 
+    # status_code for failure values before recording the access.
+    if response.status_code >= 400:
+        i.on_access(result=_ACCESS_ERROR_TARGETVIEW, url=url)
+    else:
+        i.on_access(result=_ACCESS_SUCCESS, url=url)
     
     return response
-    
+
+
 @login_required
 def createTrackedUrl(request):
     if request.method == 'POST': # If the form has been submitted...

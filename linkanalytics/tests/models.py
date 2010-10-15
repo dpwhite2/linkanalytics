@@ -2,8 +2,9 @@ import datetime
 
 from django.db import IntegrityError
 
-from linkanalytics.models import Tracker, TrackedInstance, Visitor
-from linkanalytics.models import Access
+from linkanalytics.models import Tracker, TrackedInstance, Visitor, Access
+from linkanalytics.models import _ACCESS_SUCCESS, _ACCESS_FAILURE_UUID
+from linkanalytics.models import _ACCESS_FAILURE_HASH, _ACCESS_ERROR_TARGETVIEW
 from linkanalytics import urlex
 
 import base
@@ -43,7 +44,7 @@ class TrackedInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         i = t.add_visitor(v)
         
-        i.on_access(success=False, url='')
+        i.on_access(result=_ACCESS_ERROR_TARGETVIEW, url='')
         
         self.assertEquals(i.first_access, None)
         self.assertEquals(i.recent_access, None)
@@ -59,7 +60,7 @@ class TrackedInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         i = t.add_visitor(v)
         
-        i.on_access(success=True, url='')
+        i.on_access(result=_ACCESS_SUCCESS, url='')
         
         self.assertEquals(i.recent_access.date(), datetime.date.today())
         self.assertEquals(i.first_access.date(),  datetime.date.today())
@@ -74,7 +75,8 @@ class TrackedInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         
         # Simulate an access on a previous day.
         otherday = datetime.datetime.today() - datetime.timedelta(days=7)
-        a1 = Access(instance=i, time=otherday, count=1, url='')
+        a1 = Access(instance=i, time=otherday, count=1, url='', 
+                    result=_ACCESS_SUCCESS)
         a1.save()
         
         self.assertEquals(i.recent_access.date(), otherday.date())
@@ -83,7 +85,7 @@ class TrackedInstance_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(i.was_accessed(), True)
         
         # A second access
-        i.on_access(success=True, url='')
+        i.on_access(result=_ACCESS_SUCCESS, url='')
         
         # .first_access should reflect previous access, but recent_access 
         # should reflect the most recent access.
@@ -195,7 +197,7 @@ class Tracker_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(t1.instances()[0].visitor, 
                           t2.instances()[0].visitor)
         
-        i1.on_access(success=True, url='')
+        i1.on_access(result=_ACCESS_SUCCESS, url='')
         
         # Once accessed, instances() remains the same but 
         # instances_read() should indicate that the instance has now been 
@@ -203,7 +205,7 @@ class Tracker_TestCase(base.LinkAnalytics_DBTestCaseBase):
         self.assertEquals(t1.instances().count(), 1)
         self.assertEquals(t1.instances_read().count(), 1)
         
-        i1.on_access(success=True, url='')
+        i1.on_access(result=_ACCESS_SUCCESS, url='')
         
         # A second access should not affect the object counts.
         self.assertEquals(t1.instances().count(), 1)
