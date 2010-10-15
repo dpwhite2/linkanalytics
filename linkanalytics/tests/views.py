@@ -6,7 +6,7 @@ import imghdr
 
 from django.core.urlresolvers import reverse as urlreverse
 
-from linkanalytics.models import TrackedInstance, Visitor
+from linkanalytics.models import TrackedInstance, Visitor, Tracker
 from linkanalytics import targetviews, urlex
 
 import base
@@ -33,6 +33,23 @@ class AccessHashedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):
         response = self.client.get(url, follow=True)
         self.assertEquals(response.status_code, 200)
         self.assertEquals(len(response.redirect_chain),1)
+        
+    def test_baduuid(self):
+        # first ensure no visitors or trackers exist
+        self.assertEquals(Visitor.objects.count(), 0)
+        self.assertEquals(Tracker.objects.count(), 0)
+        
+        # try to follow a non-existent uuid
+        uuid = '0'*32
+        url = urlex.hashedurl_redirect_local(uuid, 'linkanalytics/testurl/')
+        response = self.client.get(url, follow=True)
+        
+        # it should generate a 404 error
+        self.assertEquals(response.status_code, 404)
+        self.assertEquals(Visitor.objects.count(), 1)
+        self.assertEquals(Visitor.objects.all()[0].username, '_UNKNOWN')
+        self.assertEquals(Tracker.objects.count(), 1)
+        self.assertEquals(Tracker.objects.all()[0].name, '_UNKNOWN')
         
 
 class CreateTrackedUrl_TestCase(base.LinkAnalytics_DBTestCaseBase):

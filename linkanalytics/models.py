@@ -93,15 +93,26 @@ class Visitor(models.Model):
         return Visitor( username=       name,
                         emailaddress=   email,
                         comments=       comments )
+                        
+    @staticmethod
+    def unknown():
+        """Return the unknown Visitor object.  This is used when recording some 
+           failed accesses."""
+        try:
+            return Visitor.objects.get(username='_UNKNOWN')
+        except ObjectDoesNotExist:
+            v = Visitor(username='_UNKNOWN')
+            v.save()
+            return v
     
 
-_EMAILLC = r'[-\w\d!#$%&\'*+/=?^_`{|}~]'
-_EMAILLC2 = r'[-\w\d!#$%&\'*+/=?^_`{|}~.]'  # Note: contains a period
-_EMAILLOCAL = _EMAILLC+r'(?:'+_EMAILLC2+_EMAILLC+r'|'+_EMAILLC+r')*'
-_EMAILDOMAIN = r'[-\w\d.]+'
-_EMAIL = _EMAILLOCAL+r'@'+_EMAILDOMAIN
-_re_email = re.compile(_EMAIL)
-_re_emailsplit = re.compile(r'[\s,]+')
+#_EMAILLC = r'[-\w\d!#$%&\'*+/=?^_`{|}~]'
+#_EMAILLC2 = r'[-\w\d!#$%&\'*+/=?^_`{|}~.]'  # Note: contains a period
+#_EMAILLOCAL = _EMAILLC+r'(?:'+_EMAILLC2+_EMAILLC+r'|'+_EMAILLC+r')*'
+#_EMAILDOMAIN = r'[-\w\d.]+'
+#_EMAIL = _EMAILLOCAL+r'@'+_EMAILDOMAIN
+#_re_email = re.compile(_EMAIL)
+#_re_emailsplit = re.compile(r'[\s,]+')
 
 def resolve_emails(parts):
     """Convert a sequence of emails and/or usernames into Visitors."""
@@ -170,6 +181,17 @@ class Tracker(models.Model):
         i = TrackedInstance(tracker=self, visitor=visitor)
         i.save()
         return i
+                        
+    @staticmethod
+    def unknown():
+        """Return the unknown Tracker object.  This is used when recording some 
+           failed accesses."""
+        try:
+            return Tracker.objects.get(name='_UNKNOWN')
+        except ObjectDoesNotExist:
+            t = Tracker(name='_UNKNOWN')
+            t.save()
+            return t
         
 
 
@@ -254,6 +276,19 @@ class TrackedInstance(models.Model):
         """
         newhash = self.generate_hash(data)
         return hash == newhash
+        
+    @staticmethod
+    def unknown():
+        """Return the unknown TrackedInstance object.  This is used when 
+           recording some failed accesses."""
+        v = Visitor.unknown()
+        t = Tracker.unknown()
+        try:
+            return TrackedInstance.objects.get(tracker=t, visitor=v)
+        except ObjectDoesNotExist:
+            i = TrackedInstance(tracker=t, visitor=v)
+            i.save()
+            return i
     
 
 class Access(models.Model):

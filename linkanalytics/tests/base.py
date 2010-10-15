@@ -56,7 +56,6 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
        database.  This automatically destroys all Model objects in tearDown() 
        among other things.
     """
-    fixtures = ['sites.json']
     
     def scoped_login(self, username, password):
         """Allows the login functionality to be used via the with statement, to 

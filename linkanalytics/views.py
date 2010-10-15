@@ -25,6 +25,8 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
        targetview raises an exception, the unsuccessful access is noted and the 
        exception is reraised.
     """
+    # Implementation note: The access attempt must always be recorded.
+    
     url = request.build_absolute_uri()
     if not tailpath.startswith('/'):
         tailpath = '/%s' % tailpath
@@ -32,7 +34,8 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     try:
         i = TrackedInstance.objects.get(uuid=uuid)
     except ObjectDoesNotExist:
-        i.on_access(success=False, url=url)
+        # record failed access in special TrackedInstance
+        TrackedInstance.unknown().on_access(success=False, url=url)
         raise Http404
     
     # Validate the URL against the hash value.
