@@ -89,19 +89,27 @@ class LinkAnalytics_DBTestCaseBase(LinkAnalytics_TestCaseBase):
         for user in self.users:
             user.delete()
             
-    def new_tracker(self, name=None):
+    def new_tracker(self, *args, **kwargs):
         """Creates and saves a Tracker"""
+        name = kwargs.get('name', None)
+        if not name:
+            name = args[0]  if len(args) > 0 else  None
         if not name:
             name = 'tracker{0}'.format(Tracker.objects.count()+1)
-        t = Tracker(name=name)
+        kwargs['name'] = name
+        t = Tracker(**kwargs)
         t.save()
         return t
         
-    def new_visitor(self, username=None):
+    def new_visitor(self, *args, **kwargs):
         """Creates and saves a Visitor"""
+        username = kwargs.get('username', None)
+        if not username:
+            username = args[0]  if len(args) > 0 else  None
         if not username:
             username = 'visitor{0}'.format(Visitor.objects.count()+1)
-        v = Visitor(username=username)
+        kwargs['username'] = username
+        v = Visitor(**kwargs)
         v.save()
         return v
         

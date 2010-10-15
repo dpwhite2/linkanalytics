@@ -8,6 +8,7 @@ from linkanalytics.models import TrackedInstance, Visitor
 from linkanalytics.email.models import Email, DraftEmail
 
 from linkanalytics.tests.email import base
+from linkanalytics import app_settings, urlex
 
 #==============================================================================#
 # Email view tests:
@@ -93,9 +94,8 @@ class ComposeEmail_TestCase(base.LinkAnalytics_EmailTestCaseBase):
             
     def test_basic_edit(self):
         # Very basic test... just see that url exists.
-        e = DraftEmail()
-        e.save()
-        id = e.pk
+        d = self.new_draftemail()
+        id = d.pk
         self.create_users(1)
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-idcompose', 
@@ -199,8 +199,7 @@ class ViewSentEmails_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_draftNotSent(self):
         # When an email is drafted, but not sent
         self.create_users(1)
-        e = DraftEmail()
-        e.save()
+        d = self.new_draftemail()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-viewsent')
             response = self.client.get(url)
@@ -252,8 +251,7 @@ class ViewDraftEmails_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_oneUnsentDraft(self):
         # When one unsent email draft exists
         self.create_users(1)
-        d = DraftEmail()
-        d.save()
+        d = self.new_draftemail()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-viewdrafts')
             response = self.client.get(url)
@@ -264,11 +262,9 @@ class ViewDraftEmails_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     def test_oneSent(self):
         # When an email has been sent, and therefore no unsent drafts exist
         self.create_users(1)
-        t = self.new_visitor('visitor')
-        d = DraftEmail(subject='X', message='My message.')
-        d.save()
-        d.pending_recipients.add(t)
-        d.save()
+        v = self.new_visitor('visitor')
+        d = self.new_draftemail(subject='X', message='My message.', 
+                                recipients=[v])
         d.send()
         with self.scoped_login('user0', 'password'):
             url = urlreverse('linkanalytics-email-viewdrafts')
@@ -297,11 +293,9 @@ class ViewEmailRead_TestCase(base.LinkAnalytics_EmailTestCaseBase):
             
     def test_oneRead(self):
         # Check email read
-        t = self.new_visitor('visitor')
-        d = DraftEmail(subject='X', message='My message.', pixelimage=True)
-        d.save()
-        d.pending_recipients.add(t)
-        d.save()
+        v = self.new_visitor('visitor')
+        d = self.new_draftemail(subject='X', message='My message.', 
+                                pixelimage=True, recipients=[v])
         e = d.send()
         
         qs = TrackedInstance.objects.all()
@@ -383,3 +377,65 @@ class ViewEmailContacts_TestCase(base.LinkAnalytics_EmailTestCaseBase):
     # Multi contacts
 
 #==============================================================================#
+# Email targetviews
+
+class TargetViewRenderEmail_TestCase(base.LinkAnalytics_EmailTestCaseBase):
+    def test_basic(self):
+        # Create recipient, then create and send the email
+        v = self.new_visitor('visitor')
+        d = self.new_draftemail(subject='X', message='My message.', 
+                                pixelimage=True, recipients=[v])
+        e = d.send()
+        
+        # Get the TrackedInstance corresponding to the Email and Visitor
+        i = TrackedInstance.objects.get(visitor=v, tracker=e.tracker)
+        
+        # Compute the URL with which to render the email
+        urltail = urlreverse('targetview-email-render', 
+                      urlconf=app_settings.TARGETS_URLCONF)
+        url = urlex.create_hashedurl(i.uuid, urltail)
+        
+        # Haven't accessed it yet
+        self.assertEquals(i.was_accessed(), False)
+        
+        # Try the URL computed above
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        
+        # Now we've accessed it
+        self.assertEquals(i.was_accessed(), True)
+        
+        
+class TargetViewAcknowledge_TestCase(base.LinkAnalytics_EmailTestCaseBase):
+    def test_basic(self):
+        # Create recipient, then create and send the email
+        v = self.new_visitor('visitor')
+        d = self.new_draftemail(subject='X', message='My message.', 
+                                pixelimage=True, recipients=[v])
+        e = d.send()
+        
+        # Get the TrackedInstance corresponding to the Email and Visitor
+        i = TrackedInstance.objects.get(visitor=v, tracker=e.tracker)
+        
+        # Compute the URL used to acknowledge receipt of the email
+        urltail = urlreverse('targetview-email-acknowledge', 
+                      urlconf=app_settings.TARGETS_URLCONF)
+        url = urlex.create_hashedurl(i.uuid, urltail)
+        
+        # Haven't accessed it yet
+        self.assertEquals(i.was_accessed(), False)
+        
+        # Try the URL computed above
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+        
+        # Now we've accessed it
+        self.assertEquals(i.was_accessed(), True)
+
+#==============================================================================#
+
+
+
+
+
+
