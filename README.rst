@@ -1,9 +1,14 @@
-
+=============
 Linkanalytics
 =============
 
+.. note:: This is currently the first alpha release.  Some features are 
+   incomplete or not yet implemented.
+   
+.. contents::
+
 Introduction
-------------
+============
 
 Linkanalytics is a Django app that tracks web accesses by particular visitors.  
 Each tracked URL contains a unique identifier which opaquely identifies both 
@@ -16,7 +21,7 @@ links to be counted.
 
 
 Concepts
---------
+========
 
 The Linkanalytics model is based around four concepts: the *Visitor*, the 
 *Tracker*, a *TrackedInstance*, and an *Access*.
@@ -41,19 +46,21 @@ When a tracked URL is visited, some resource must be returned.  This is done
 using a Django view function and the appropriate function is called by querying 
 a urlconf.  (This urlconf may be set using the ``LINKANALYTICS_TARGETS_URLCONF`` 
 setting.)  The Linkanalytics term for the resource is a *target*, and the views 
-and urls modules are called targetviews and targeturls respectively.
+module is called targetviews.  By default, the urls for a target are stored 
+within the project's normal urlconf files.
 
 
 URL Structure
--------------
+=============
 
 A Linkanalytics tracked URL is in the following format:
-    ``<URLBASE>``/linkanalytics/access/j/``<HASH>``/``<UUID>``/``<URLTAIL>``
+    ``<URLBASE>``/``<HASH>``/``<UUID>``/``<URLTAIL>``
     
 ``URLBASE``:
     The beginning of the URL and one that does not factor in Linkanalytics 
     tracking.  This includes everything from ``http://`` until immediately 
-    before ``linkanalytics``.
+    before ``linkanalytics``.  This is defined by the setting 
+    ``LINKANALYTICS_URLBASE``.
     
 ``HASH``:
     A hash value based on the ``SECRET_KEY`` provided by Django, the UUID, and 
@@ -68,13 +75,98 @@ A Linkanalytics tracked URL is in the following format:
     The URL that the targeturls module evaluates and determines which 
     targetview function is called.
 
-``linkanalytics/access/j/``:
-    This is simply the default value for this portion of the URL.  Users of the 
-    app may modify it to fit their requirements.
+
+Installation and Configuration
+==============================
+
+Hopefully you'll find Linkanalytics installation to be relatively simple.  
+There are a few main steps but each should be relatively short.  These steps 
+assume you already have Linkanalytics in the right location (generally a 
+subdirectory of your project directory).  As with every other Django app, you 
+will need to set the ``INSTALLED_APPS`` setting to include Linkanalytics.  
+
+Settings
+--------
+
+Once you have the Linkanalytics package in the right location, you will need to 
+define one setting, and have the option to define many others.  Those others 
+fall back to suitable defaults otherwise.  
+
+The setting you *must* define in your settings.py module is 
+``LINKANALYTICS_URLBASE``.  This is should contain everything that comes before 
+"/linknalytics" in your URLs.  For example, if the app can be accessed at 
+"\http://www.example.com/linkanalytics", you would need to set 
+``LINKANALYTICS_URLBASE`` to "\http://www.example.com".  It *must not* contain a 
+trailing slash.
+
+URLs
+----
+
+Linkanalytics must be able to respond to tracked URLs so it can forward them to 
+targets.  Like any other Django app, this is accomplished through the urlconf.  
+Linkanalytics makes this easy by providing a variable that you can place 
+directly in your root urls.py file::
+
+    ...
+    import linkanalytics.urlsaccess
+    ...
+    urlpatterns = patterns('',
+        ... 
+        linkanalytics.urlsaccess.URLCONF_TUPLE,
+        (r'^linkanalytics/', include('linkanalytics.urls')),
+        ... 
+    )
+    
+This will forward anything matching a Linkanalytics tracked URL to the 
+appropriate targetview.
+
+This should normally be placed in your root urlconf.  When Linkanalytics 
+creates a tracked URL, the ``LINKANALYTICS_URLBASE`` is always the first part 
+of it.  Therefore, technically, the ``URLCONF_TUPLE`` variable should be placed 
+in the urls.py file such that all URLs to it will be interpreted as beginning 
+with the ``LINKANALYTICS_URLBASE``--this is normally the root urlconf.
+
+Target Views
+------------
+
+The ``<URLTAIL>`` portion of a tracked URL (see `URL Structure`_) determines to 
+which view Linkanalytics will forward a request.  Such views are called 
+targetviews.  Linkanalytics comes with a few such targetviews, mostly having to 
+deal with the needs of the Email app.  However, the system is fully extensible 
+and you are free to add more targetviews of your own.
+
+A targetview function can do anything a normal view can do.  And it must also 
+return a Django response.  However it does have an extra required parameter and 
+it must have a decorator.  Here is the outline of a targetview::
+
+    from django.http import HttpResponse
+    from linkanalytics import decorators
+
+    @decorators.targetview()
+    def my_targetview(request, uuid):
+        html = "<html><body>This is my targetview.</body></html>"
+        return HttpResponse(html)
+
+The ``uuid`` parameter is the uuid that was contained in the tracked URL.  Any 
+extra parameters that are in the urlconf pattern will follow ``uuid`` just like 
+normal views.  
+
+.. _uuid: `URL Structure`_
+
+The decorator provides a simple mechanism that allows only tracked URLs 
+redirect to targetviews.  If someone tries to access a targetview with an 
+untracked URL, they will receive a HTTP 404 error.  If this behavior is not 
+desired, you can allow access via tracked *and* untracked with the 
+``allow_all`` argument::
+
+    @decorators.targetview(allow_all=True)
+    def my_targetview(request, uuid):
+        html = "<html><body>This is my targetview.</body></html>"
+        return HttpResponse(html)
     
     
 Email App
----------
+=========
 
 The email app contained within is built on top of Linkanalytics.  It allows one 
 to send emails which, with the help of cooperative recipients, allows the 
@@ -90,11 +182,11 @@ except to send them to more contacts.
 
 Once sent, one may find out which recipients have acknowledged that they read 
 the email and which have not.
+        
 
+History
+=======
 
-Installation and Configuration
-------------------------------
-
-...TODO...
+This is the alpha release.
 
 

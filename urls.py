@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
-from linkanalytics.urlsaccess import urltuple
+import linkanalytics.urlsaccess
 
 urlpatterns = patterns('',
     # Example:
@@ -19,7 +19,7 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
     
-    urltuple,
+    linkanalytics.urlsaccess.URLCONF_TUPLE,
     
     (r'^linkanalytics/', include('linkanalytics.urls')),
 

@@ -19,8 +19,6 @@ def getsettings(name, default):
 # Base url in Linkanalytics app (everything before the '/linkanalytics/...')
 # It must NOT include a trailing slash.
 URLBASE = settings.LINKANALYTICS_URLBASE
-#   ... or get this from HttpRequest, since email has to be composed from a
-#       view.  But then that limits auto delivery. hmmm...
 
 # Where to find the pixel images.  The default is the media subdirectory.
 PIXEL_IMGDIR = getsettings('PIXEL_IMGDIR', 'linkanalytics/media')

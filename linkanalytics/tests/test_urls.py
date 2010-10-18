@@ -10,7 +10,7 @@ __test__ = False
 
 from django.conf.urls.defaults import *
 
-from linkanalytics.urlsaccess import urltuple
+import linkanalytics.urlsaccess
 
 # Note that the trailing slash in _TAILPATH is optional.
 _TAILPATH = r'(?P<tailpath>(?:(?:/[-\w\d_.])|[-\w\d_.])+/?)'
@@ -30,7 +30,7 @@ urlpatterns = patterns('',
     #(PREFIX+r'create_trackee/$', 'views.createTrackee'),
     #(PREFIX+r'create_trackedurl/$', 'views.createTrackedUrl'),
     
-    urltuple,
+    linkanalytics.urlsaccess.URLCONF_TUPLE,
     
     (r'^linkanalytics/', include('linkanalytics.urls')),
     

@@ -17,7 +17,7 @@ _HASH = r'(?P<hash>[a-f0-9]{32,})'
 
 # The Regex for accessTrackedUrl and accessHashedTrackedUrl: the ending '/' 
 # is optional.
-urltuple = (r'^'+_HASH+r'/'+_UUID+r'/'+_TAILPATH+r'$', 
+URLCONF_TUPLE = (r'^'+_HASH+r'/'+_UUID+r'/'+_TAILPATH+r'$', 
                 'linkanalytics.views.accessHashedTrackedUrl', {}, 
                 'linkanalytics-accesshashedview')
 
