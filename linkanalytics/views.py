@@ -48,9 +48,12 @@ def accessHashedTrackedUrl(request, hash, uuid, tailpath):
     
     # Call the targetview function (represented by 'viewfunc')
     try:
+        # Flag to verify this request comes via a tracked url
         viewfunc, args, kwargs = resolve(tailpath, 
                                          urlconf=app_settings.TARGETS_URLCONF)
-        response = viewfunc(request, uuid, *args, **kwargs)
+        kwargs['linkanalytics_flag'] = True
+        kwargs['linkanalytics_uuid'] = uuid
+        response = viewfunc(request, *args, **kwargs)
     except Exception:
         i.on_access(result=_ACCESS_ERROR_TARGETVIEW, url=url)
         raise

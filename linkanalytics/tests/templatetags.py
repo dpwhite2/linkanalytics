@@ -31,7 +31,7 @@ class Track_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         t = Template(templtxt)
         c = Context({})
         s = t.render(c)
-        url = "http/www.domain.org/path/to/file.html"
+        url = "linkanalytics/http/www.domain.org/path/to/file.html"
         self.assertEquals(s, '\n{{% trackedurl linkid "{0}" %}}\n'.format(url))
         
     def test_pixel(self):
@@ -46,8 +46,8 @@ class Track_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         s = t.render(c)
         a = '{% if not ignore_pixelimages %}'
         b = '{% endif %}'
-        gpx = '{% trackedurl linkid "gpx" %}'
-        ppx = '{% trackedurl linkid "ppx" %}'
+        gpx = '{% trackedurl linkid "linkanalytics/gpx" %}'
+        ppx = '{% trackedurl linkid "linkanalytics/ppx" %}'
         exp = '\n{a}{gpx}{b}\n{a}{ppx}{b}\n'.format(a=a, b=b, gpx=gpx, ppx=ppx)
         self.assertEquals(s, exp)
         
@@ -56,7 +56,7 @@ class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
     def test_basic(self):
         templtxt = """\
             {% load tracked_links %}
-            {% trackedurl linkid "r/path/to/file.ext" %}
+            {% trackedurl linkid "linkanalytics/r/path/to/file.ext" %}
             """
         templtxt = textwrap.dedent(templtxt)
         t = Template(templtxt)
@@ -69,9 +69,9 @@ class TrackedUrl_TemplateTag_TestCase(base.LinkAnalytics_TestCaseBase):
         
     def test_url(self):
         templtxt = """\
-            {% load tracked_links %}
-            {% trackedurl linkid "http/www.example.com/path/file.html" %}
-            """
+            {{% load tracked_links %}}
+            {{% trackedurl linkid "{0}" %}}
+            """.format("linkanalytics/http/www.example.com/path/file.html")
         templtxt = textwrap.dedent(templtxt)
         t = Template(templtxt)
         uuid = '0'*32

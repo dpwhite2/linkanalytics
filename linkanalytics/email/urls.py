@@ -38,5 +38,11 @@ urlpatterns = patterns('linkanalytics.email',
     (r'^(?P<emailid>\d+)/content/$', 'views.viewSentEmailContent', 
                     {}, 'linkanalytics-email-viewsentcontent'),
                     
+    # Target views...
+    (r'^render/$', 'targetviews.targetview_renderemail', 
+                                    {}, 'targetview-email-render'),
+                                    
+    (r'^acknowledge-receipt/$', 'targetviews.targetview_acknowledge', 
+                                    {}, 'targetview-email-acknowledge'),
     
 )

@@ -66,9 +66,9 @@ class InstantiateEmails_TestCase(base.LinkAnalytics_TestCaseBase):
         
     def test_trail(self):
         htmlsrc = "<html><head></head><body>"
-        htmlsrc += "{% trackedurl linkid 'r/path/to/file.ext' %}"
+        htmlsrc += "{% trackedurl linkid 'linkanalytics/r/path/to/file.ext' %}"
         htmlsrc += "</body></html>"
-        textsrc = "{% trackedurl linkid 'r/path/to/file.ext' %}"
+        textsrc = "{% trackedurl linkid 'linkanalytics/r/path/to/file.ext' %}"
         urlbase = 'http://example.com'
         uuid = '0'*32
         inst = _email.email_instantiator(textsrc, htmlsrc, urlbase)

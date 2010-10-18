@@ -5,9 +5,10 @@ from django.template import RequestContext
 from linkanalytics.models import TrackedInstance
 from linkanalytics.email.models import Email
 
-from linkanalytics import app_settings
+from linkanalytics import app_settings, decorators
 
 #==============================================================================#
+@decorators.targetview()
 def targetview_renderemail(request, uuid):
     """Renders an email for a user. """
     # TODO: What to do if uuid is not found?  (This should not happen because 
@@ -18,10 +19,12 @@ def targetview_renderemail(request, uuid):
     return render_to_response('linkanalytics/email/render_email.html',
                              { 'content': content },
                               context_instance=RequestContext(request))
-    
+
+@decorators.targetview()
 def targetview_acknowledge(request, uuid):
     """A thank you to contacts who acknowledge they received an email."""
-    msg = 'Email target view: targetview_acknowledge().  Under Construction'
+    # TODO: improve this message.
+    msg = 'Thank you for acknowledging that you recieved our email.'
     return HttpResponse(msg)
 
 #==============================================================================#

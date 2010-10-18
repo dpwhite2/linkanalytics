@@ -26,24 +26,44 @@ class TrackUrlNode(TrackNode):
         TrackNode.__init__(self)
         p = urlparse.urlsplit(url)
         scheme, netloc, path, query, fragment = p
-        u = '{s}/{n}{f}'.format(s=scheme, n=netloc, f=path)
-        self.text = create_trackedurl_tag(u)
+        path = path[1:] # trim leading slash
+        if scheme=='http':
+            url = urlex.urltail_redirect_http(domain=netloc, filepath=path)[1:]
+        elif scheme=='https':
+            url = urlex.urltail_redirect_https(domain=netloc, filepath=path)[1:]
+        else:
+            raise RuntimeError('Unknown scheme')
+        self.text = create_trackedurl_tag(url)
     def render(self, context):
         return self.text
 
 class TrackPixelNode(TrackNode):
     def __init__(self, type):
         TrackNode.__init__(self)
-        trailpath = 'gpx'
         if type == 'gif':
-            trailpath = 'gpx'
+            trailpath = urlex.urltail_pixelgif()[1:]
         elif type == 'png':
-            trailpath = 'ppx'
+            trailpath = urlex.urltail_pixelpng()[1:]
+        else:
+            raise RuntimeError('Unknown pixelimage type')
         self.text = create_trackedurl_tag(trailpath)
     def render(self, context):
         a = '{% if not ignore_pixelimages %}'
         b = '{% endif %}'
         return '{0}{1}{2}'.format(a, self.text, b)
+        
+class TrackEmailNode(TrackNode):
+    def __init__(self, option):
+        TrackNode.__init__(self)
+        if option=='render':
+            url = urlreverse('targetview-email-render')
+        elif option=='acknowledge':
+            url = urlreverse('targetview-email-acknowledge')
+        else:
+            raise RuntimeError('Unknown email option')
+        self.text = create_trackedurl_tag(url)
+    def render(self, context):
+        return self.text
 
 
 def track(parser, token):
@@ -68,6 +88,8 @@ def track(parser, token):
         return TrackUrlNode(arg)
     elif category == 'pixel':
         return TrackPixelNode(arg)
+    elif category == 'email':
+        return TrackEmailNode(arg)
     else:
         fmt = (tagname, category)
         msg = "%r tag's first argument, '%s', was not recognized" % fmt

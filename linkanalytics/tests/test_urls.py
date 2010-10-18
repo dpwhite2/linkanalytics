@@ -10,6 +10,8 @@ __test__ = False
 
 from django.conf.urls.defaults import *
 
+from linkanalytics.urlsaccess import urltuple
+
 # Note that the trailing slash in _TAILPATH is optional.
 _TAILPATH = r'(?P<tailpath>(?:(?:/[-\w\d_.])|[-\w\d_.])+/?)'
 _UUID = r'(?P<uuid>[a-f0-9]{32})'
@@ -20,23 +22,22 @@ _HASH = r'(?P<hash>[a-f0-9]{32,})'
 
 PREFIX = r'^linkanalytics/'
 
-urlpatterns = patterns('linkanalytics',
+#==============================================================================#
+urlpatterns = patterns('',
     
-    (PREFIX+r'email/', include('linkanalytics.email.urls')),
+    #(PREFIX+r'email/', include('linkanalytics.email.urls')),
 
-    (PREFIX+r'create_trackee/$', 'views.createTrackee'),
-    (PREFIX+r'create_trackedurl/$', 'views.createTrackedUrl'),
+    #(PREFIX+r'create_trackee/$', 'views.createTrackee'),
+    #(PREFIX+r'create_trackedurl/$', 'views.createTrackedUrl'),
     
-    # The Regex for accessTrackedUrl and accessHashedTrackedUrl: the ending '/' 
-    # is optional.
-    ##(PREFIX+r'access/'+_UUID+r'/'+_TAILPATH+r'$', 
-    ##    'views.accessTrackedUrl', {}, 'linkanalytics-accessview'),
-    (PREFIX+r'access/j/'+_HASH+r'/'+_UUID+r'/'+_TAILPATH+r'$', 
-        'views.accessHashedTrackedUrl', {}, 'linkanalytics-accesshashedview'),
+    urltuple,
+    
+    (r'^linkanalytics/', include('linkanalytics.urls')),
     
     # Some urls defined for testing purposes only.
-    (PREFIX+r'testurl/$', 'tests.test_views.testview'),
+    (PREFIX+r'testurl/$', 'linkanalytics.tests.test_views.testview'),
 )
 
+#==============================================================================#
 handler404 = 'linkanalytics.tests.test_views.on_page_not_found'
 

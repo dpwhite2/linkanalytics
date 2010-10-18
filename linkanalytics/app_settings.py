@@ -49,7 +49,8 @@ if not SECRET_KEY:
     SECRET_KEY = settings.SECRET_KEY
 
 # Location of the urlconf used to redirect accessed urls to their targetviews.
-TARGETS_URLCONF = getsettings('TARGETS_URLCONF', 'linkanalytics.targeturls')
+TARGETS_URLCONF = getsettings('TARGETS_URLCONF', 'urls')
+# 'linkanalytics.targeturls'
 
 # Length of urls stored in the database.
 URLFIELD_LENGTH = getsettings('URLFIELD_LENGTH', 3000)
